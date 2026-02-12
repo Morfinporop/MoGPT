@@ -17,11 +17,15 @@ const RUDENESS_MODES: { id: RudenessMode; label: string; icon: typeof Flame; des
   { id: 'polite', label: 'Вежливый', icon: Smile, desc: 'Без мата и грубости' },
 ];
 
+const UNLIMITED_EMAILS = ['energoferon41@gmail.com'];
+const WORD_LIMIT = 500;
+
 export function ChatInput() {
   const [input, setInput] = useState('');
   const [showModes, setShowModes] = useState(false);
   const [showRudeness, setShowRudeness] = useState(false);
   const [showLimitWarning, setShowLimitWarning] = useState(false);
+  const [showWordLimitWarning, setShowWordLimitWarning] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const modesRef = useRef<HTMLDivElement>(null);
   const rudenessRef = useRef<HTMLDivElement>(null);
@@ -39,9 +43,18 @@ export function ChatInput() {
     isCurrentChatGenerating,
   } = useChatStore();
 
-  const { canSendMessage, incrementGuestMessages, isAuthenticated } = useAuthStore();
+  const { canSendMessage, incrementGuestMessages, isAuthenticated, user } = useAuthStore();
 
   const generating = isCurrentChatGenerating();
+
+  const isUnlimitedUser = user?.email && UNLIMITED_EMAILS.includes(user.email);
+
+  const getWordCount = (text: string) => {
+    return text.trim().split(/\s+/).filter(w => w.length > 0).length;
+  };
+
+  const wordCount = getWordCount(input);
+  const isOverLimit = !isUnlimitedUser && wordCount > WORD_LIMIT;
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -67,11 +80,25 @@ export function ChatInput() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    const words = getWordCount(value);
+
+    if (!isUnlimitedUser && words > WORD_LIMIT) {
+      setShowWordLimitWarning(true);
+      setTimeout(() => setShowWordLimitWarning(false), 3000);
+    } else {
+      setShowWordLimitWarning(false);
+    }
+
+    setInput(value);
+  };
+
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
 
     const trimmedInput = input.trim();
-    if (!trimmedInput || generating) return;
+    if (!trimmedInput || generating || isOverLimit) return;
 
     if (!canSendMessage()) {
       setShowLimitWarning(true);
@@ -154,6 +181,22 @@ export function ChatInput() {
             <Lock className="w-4 h-4 text-orange-400 flex-shrink-0" />
             <p className="text-sm text-orange-300">
               Лимит исчерпан. Зарегистрируйся для безлимитного доступа.
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showWordLimitWarning && isOverLimit && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="flex items-center gap-2 px-4 py-3 mb-3 rounded-xl bg-red-500/10 border border-red-500/20"
+          >
+            <Lock className="w-4 h-4 text-red-400 flex-shrink-0" />
+            <p className="text-sm text-red-300">
+              Превышен лимит в {WORD_LIMIT} слов. Сейчас: {wordCount} слов.
             </p>
           </motion.div>
         )}
@@ -282,16 +325,16 @@ export function ChatInput() {
 
         <form
           onSubmit={handleSubmit}
-          className={`flex-1 relative rounded-2xl glass-strong shadow-lg shadow-violet-500/5 border border-white/5 ${
-            limitReached ? 'opacity-50' : ''
-          }`}
+          className={`flex-1 relative rounded-2xl glass-strong shadow-lg shadow-violet-500/5 border ${
+            isOverLimit ? 'border-red-500/50' : 'border-white/5'
+          } ${limitReached ? 'opacity-50' : ''}`}
         >
           <div className="relative flex items-center min-h-[52px] px-4">
             <div className="flex-1 flex items-center">
               <textarea
                 ref={textareaRef}
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
                 placeholder={limitReached ? 'Зарегистрируйся для продолжения...' : 'Напиши что-нибудь...'}
                 disabled={generating || limitReached}
@@ -307,13 +350,21 @@ export function ChatInput() {
               />
             </div>
 
+            {!isUnlimitedUser && input.trim().length > 0 && (
+              <span className={`text-[11px] mr-2 flex-shrink-0 ${
+                isOverLimit ? 'text-red-400' : wordCount > WORD_LIMIT * 0.8 ? 'text-orange-400' : 'text-zinc-600'
+              }`}>
+                {wordCount}/{WORD_LIMIT}
+              </span>
+            )}
+
             <motion.button
               type="submit"
-              disabled={!input.trim() || generating || limitReached}
+              disabled={!input.trim() || generating || limitReached || isOverLimit}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className={`flex-shrink-0 w-10 h-10 rounded-xl transition-all duration-200 ml-2 flex items-center justify-center ${
-                input.trim() && !generating && !limitReached
+                input.trim() && !generating && !limitReached && !isOverLimit
                   ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/25'
                   : 'bg-white/5 text-zinc-600 cursor-not-allowed'
               }`}
