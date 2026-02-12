@@ -17,6 +17,8 @@ const RUDENESS_MODES: { id: RudenessMode; label: string; icon: typeof Flame; des
   { id: 'polite', label: 'Вежливый', icon: Smile, desc: 'Без мата и грубости' },
 ];
 
+const generatingChats = new Set<string>();
+
 export function ChatInput() {
   const [input, setInput] = useState('');
   const [showModes, setShowModes] = useState(false);
@@ -29,16 +31,17 @@ export function ChatInput() {
   const {
     addMessage,
     updateMessage,
-    isGenerating,
-    setGenerating,
     getCurrentMessages,
+    currentChatId,
     responseMode,
     setResponseMode,
     rudenessMode,
     setRudenessMode,
   } = useChatStore();
 
-  const { canSendMessage, incrementGuestMessages, isAuthenticated, guestMessages, maxGuestMessages } = useAuthStore();
+  const { canSendMessage, incrementGuestMessages, isAuthenticated } = useAuthStore();
+
+  const isCurrentChatGenerating = currentChatId ? generatingChats.has(currentChatId) : false;
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -64,7 +67,7 @@ export function ChatInput() {
     e?.preventDefault();
 
     const trimmedInput = input.trim();
-    if (!trimmedInput || isGenerating) return;
+    if (!trimmedInput || isCurrentChatGenerating) return;
 
     if (!canSendMessage()) {
       setShowLimitWarning(true);
@@ -72,12 +75,15 @@ export function ChatInput() {
       return;
     }
 
+    const chatId = currentChatId;
+    if (!chatId) return;
+
     setInput('');
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
     }
 
-    setGenerating(true);
+    generatingChats.add(chatId);
 
     if (!isAuthenticated) {
       incrementGuestMessages();
@@ -116,7 +122,7 @@ export function ChatInput() {
       console.error('Error:', error);
       updateMessage(assistantId, 'Бля, что-то пошло не так. Попробуй ещё раз.', '');
     } finally {
-      setGenerating(false);
+      generatingChats.delete(chatId);
     }
   };
 
@@ -148,24 +154,6 @@ export function ChatInput() {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {!isAuthenticated && (
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <div className="flex items-center gap-1.5">
-            {Array.from({ length: maxGuestMessages }).map((_, i) => (
-              <div
-                key={i}
-                className={`w-1.5 h-1.5 rounded-full transition-all ${
-                  i < guestMessages ? 'bg-violet-500' : 'bg-zinc-700'
-                }`}
-              />
-            ))}
-          </div>
-          <span className="text-[11px] text-zinc-600">
-            {guestMessages}/{maxGuestMessages}
-          </span>
-        </div>
-      )}
 
       <div className="flex items-end gap-2">
         <div className="relative" ref={modesRef}>
@@ -314,7 +302,7 @@ export function ChatInput() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder={limitReached ? 'Зарегистрируйся для продолжения...' : 'Напиши что-нибудь...'}
-                disabled={isGenerating || limitReached}
+                disabled={isCurrentChatGenerating || limitReached}
                 rows={1}
                 className="w-full bg-transparent text-white placeholder-zinc-600 resize-none text-[15px] leading-relaxed py-1 max-h-[160px] focus:outline-none"
                 style={{
@@ -327,11 +315,11 @@ export function ChatInput() {
 
             <motion.button
               type="submit"
-              disabled={!input.trim() || isGenerating || limitReached}
+              disabled={!input.trim() || isCurrentChatGenerating || limitReached}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className={`flex-shrink-0 p-2.5 rounded-xl transition-all duration-200 mb-[2px] ${
-                input.trim() && !isGenerating && !limitReached
+                input.trim() && !isCurrentChatGenerating && !limitReached
                   ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/25'
                   : 'bg-white/5 text-zinc-600 cursor-not-allowed'
               }`}
@@ -339,7 +327,7 @@ export function ChatInput() {
               {limitReached ? (
                 <Lock className="w-5 h-5" />
               ) : (
-                <Send className={`w-5 h-5 ${isGenerating ? 'animate-pulse' : ''}`} />
+                <Send className={`w-5 h-5 ${isCurrentChatGenerating ? 'animate-pulse' : ''}`} />
               )}
             </motion.button>
           </div>
