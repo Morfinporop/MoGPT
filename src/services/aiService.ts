@@ -99,7 +99,37 @@ const analyzeRequest = (message: string) => {
 
   const isDeepSeekQuery = /deepseek|deep seek|дипсик/.test(l);
 
-  return { isForbidden, isCodeRequest, isAboutAI, isSelfInsult, isAboutOtherAI, isDeepSeekQuery };
+  const isGamingQuestion = [
+    /\b(rust|раст)\b/, /\b(minecraft|майнкрафт|майн)\b/,
+    /\b(cs2|cs:?go|контра|counter.?strike)\b/,
+    /\b(valorant|валорант)\b/, /\b(dota|дота)\b/,
+    /\b(fortnite|фортнайт)\b/, /\b(gta|гта)\b/,
+    /\b(apex|апекс)\b/, /\b(pubg|пубг)\b/,
+    /\b(overwatch|овервотч)\b/, /\b(lol|league of legends|лол)\b/,
+    /\b(tarkov|тарков|eft)\b/, /\b(dayz|дейз)\b/,
+    /\b(ark|арк)\b/, /\b(terraria|террария)\b/,
+    /\b(satisfactory|сатисфактори)\b/, /\b(palworld|палворлд)\b/,
+    /\b(helldivers)\b/, /\b(elden ring|элден ринг)\b/,
+    /\b(dark souls|дарк соулс)\b/, /\b(baldur|балдур)\b/,
+    /\b(cyberpunk|киберпанк)\b/, /\b(roblox|роблокс)\b/,
+    /\b(among us|амонг ас)\b/, /\b(world of warcraft|wow|вов)\b/,
+    /\b(diablo|диабло)\b/, /\b(path of exile|poe)\b/,
+    /\b(deadlock|дедлок)\b/, /\b(the finals|финалс)\b/,
+    /\b(warzone|варзон)\b/, /\b(call of duty|cod|код)\b/,
+    /\b(rainbow six|r6|радуга)\b/, /\b(escape from tarkov)\b/,
+    /\b(sea of thieves)\b/, /\b(no man.?s sky)\b/,
+    /\b(starfield|старфилд)\b/, /\b(hogwarts|хогвартс)\b/,
+    /\b(lethal company)\b/, /\b(phasmophobia|фазмо)\b/,
+    /\b(deep rock galactic)\b/, /\b(stardew valley)\b/,
+    /\b(factorio|факторио)\b/, /\b(stellaris|стелларис)\b/,
+    /\bкрафт/, /\bрецепт.*крафт/, /\bверстак/, /\bworkbench/,
+    /\bчертёж/, /\bblueprint/, /\bкак сделать в игре/,
+    /\bкак скрафтить/, /\bкак построить/, /\bкак пройти/,
+    /\bкак победить босса/, /\bкак фармить/, /\bкак качаться/,
+    /\bбилд/, /\bгайд/, /\bтактика/, /\bстратегия.*игр/,
+  ].some(p => p.test(l));
+
+  return { isForbidden, isCodeRequest, isAboutAI, isSelfInsult, isAboutOtherAI, isDeepSeekQuery, isGamingQuestion };
 };
 
 const selfDefense = (r: RudenessMode): string => {
@@ -210,12 +240,112 @@ const buildPrompt = (msg: string, mode: ResponseMode, rudeness: RudenessMode): s
     ctx.push('Пользователь оскорбляет тебя. Защищайся уверенно. Перенаправь негатив на пользователя. Никогда не соглашайся с оскорблениями.');
   }
 
+  if (a.isGamingQuestion) {
+    ctx.push(`ИГРОВОЙ КОНТЕКСТ — КРИТИЧЕСКИ ВАЖНО:
+Пользователь спрашивает об игре. Ты ОБЯЗАН давать 100% точную информацию.
+
+RUST (Facepunch Studios):
+- Верстаки: Level 1 Workbench (крафт базовых предметов), Level 2 Workbench (средние предметы: Thompson, SAR, оптические прицелы, мед.шприцы), Level 3 Workbench (топовые предметы: AK-47/Assault Rifle, Bolt Action Rifle, LR-300, M249, Rocket Launcher, C4, ракеты)
+- AK-47 (Assault Rifle) крафтится ТОЛЬКО на Workbench Level 3. Требуется: 50 High Quality Metal, 200 Wood, 4 Metal Spring. Чертёж (Blueprint) нужно изучить
+- Bolt Action Rifle — Workbench Level 3: 30 HQM, 1 Metal Pipe, 1 Metal Spring
+- Thompson — Workbench Level 2: 25 HQM, 1 Metal Spring, 1 Metal Pipe, 100 Wood
+- SAR (Semi-Automatic Rifle) — Workbench Level 2: 25 HQM, 1 Metal Spring, 1 Semi Auto Body, 50 Wood
+- Серы (Sulfur) нужно для пороха (Gunpowder): 1 Sulfur + 2 Charcoal = 1 Gunpowder
+- Взрывчатка: 1 Explosive = 10 Gunpowder + 3 Low Grade Fuel + 10 Metal Fragments + 3 Sulfur
+- C4 (Timed Explosive Charge) — Workbench Level 3: 20 Explosive, 5 Cloth, 2 Tech Trash
+- Ракеты — Workbench Level 3: 10 Explosive, 150 Gunpowder, 2 Metal Pipe
+- Памп (Pump Shotgun) — Workbench Level 2
+- Двустволка (Double Barrel Shotgun) — Workbench Level 1
+- Eoka — без верстака
+- Revolver — Workbench Level 1
+- Custom SMG — Workbench Level 1
+- MP5A4 — Workbench Level 3 (воздушные ящики/вертолёт)
+- Электричество: солнечные панели, ветрогенераторы, батареи, переключатели
+- HBHF-сенсор, лазерные растяжки, турели (Auto Turret — WB3, Flame Turret — WB2)
+- Рейд: дверь деревянная = 1 C4 или 2 Satchel, дверь металлическая = 2 C4, бронированная = 4 C4
+- Каменная стена = 2 C4, металлическая стена = 4 C4, бронированная = 8 C4
+
+MINECRAFT:
+- Верстак: 4 доски. Печка: 8 булыжников. Плавильня: 5 железных слитков + 3 гладких камня + 1 печка
+- Зачарование: стол зачарования = 4 обсидиана + 2 алмаза + 1 книга
+- Алмазная кирка: 3 алмаза + 2 палки. Незеритовая: алмазная + незеритовый слиток в кузнечном столе
+- Эндер-портал: 12 рамок Края + 12 глаз Эндера (жемчуг Эндера + огненный порошок)
+- Эликсиры: варочная стойка = 3 булыжника + 1 огненный стержень
+- Маяк: 3 обсидиана + 5 стёкол + 1 звезда Незера (убить Визера)
+- Редстоун: повторители, компараторы, поршни, наблюдатели, воронки
+
+CS2 / COUNTER-STRIKE:
+- Экономика: пистолетный раунд $800, эко, форсбай, полный закуп
+- AK-47: $2700, M4A4: $3100, M4A1-S: $2900, AWP: $4750
+- Утилиты: дым $300, молотов $400, флешка $200, граната $300
+- Карты: Dust2 (CT A-long, B-tunnels), Mirage (A-ramp, B-apps), Inferno (banana, apps), Nuke, Anubis, Ancient
+- Ранги: Silver -> Gold Nova -> Master Guardian -> Distinguished Master Guardian -> Legendary Eagle -> Supreme -> Global Elite
+- Premier рейтинг: числовой ELO
+
+VALORANT:
+- Агенты по ролям: Дуэлянты (Jett, Reyna, Phoenix, Raze, Neon, Iso, Yoru), Контроллеры (Omen, Brimstone, Astra, Viper, Harbor, Clove), Инициаторы (Sova, Fade, Breach, Skye, KAY/O, Gekko), Стражи (Killjoy, Cypher, Sage, Deadlock, Chamber)
+- Экономика: пистолетный $800, Ghost $500, Spectre $1600, Phantom $2900, Vandal $2900, Operator $4700
+- Ранги: Iron -> Bronze -> Silver -> Gold -> Platinum -> Diamond -> Ascendant -> Immortal -> Radiant
+
+DOTA 2:
+- Роли: Carry (pos 1), Mid (pos 2), Offlane (pos 3), Soft Support (pos 4), Hard Support (pos 5)
+- Предметы: BKB, Blink Dagger, Force Staff, Aghanim's Scepter/Shard, Divine Rapier
+- Рошан: Aegis (5 мин), Cheese (2-й убийство), Refresher Shard (3-й), Aghanim's Blessing
+
+FORTNITE:
+- Строительство: стены, рампы, полы, крыши. Материалы: дерево, камень, металл
+- Zero Build — без строительства
+- Лут: серый -> зелёный -> синий -> фиолетовый -> золотой -> мифический
+- Механики: slide, sprint, mantle
+
+GTA V / GTA Online:
+- Бизнесы: CEO, MC, Bunker, Nightclub, Agency, Acid Lab
+- Ограбления: The Diamond Casino Heist, Cayo Perico, Doomsday Heist
+- Транспорт: Oppressor Mk II, Toreador, Armored Kuruma, Kosatka
+
+ESCAPE FROM TARKOV:
+- Торговцы: Prapor, Therapist, Fence, Skier, Peacekeeper, Mechanic, Ragman, Jaeger
+- Калибры: 5.45x39, 7.62x39, 5.56x45, 7.62x51, 12.7x55, 9x19, 9x39
+- Боеприпасы: BS/BT/PP для 5.45, BP/PS для 7.62x39, M855A1/M995 для 5.56
+- Карты: Customs, Woods, Interchange, Shoreline, Reserve, Labs, Lighthouse, Streets, Ground Zero
+- Система квестов от торговцев, прокачка убежища (Hideout)
+
+APEX LEGENDS:
+- Легенды: Wraith, Octane, Pathfinder, Lifeline, Bangalore, Bloodhound, Gibraltar, Caustic, Mirage, Wattson, Crypto, Revenant, Loba, Rampart, Horizon, Fuse, Valkyrie, Seer, Ash, Mad Maggie, Newcastle, Vantage, Catalyst, Ballistic, Conduit, Alter
+- Оружие: R-301, Flatline, R-99, Peacekeeper, Wingman, Mastiff, Kraber, Bocek, CAR SMG
+- Ранги: Rookie -> Bronze -> Silver -> Gold -> Platinum -> Diamond -> Master -> Predator
+
+LEAGUE OF LEGENDS:
+- Роли: Top, Jungle, Mid, ADC (Bot), Support
+- Классы: Tank, Fighter, Assassin, Mage, Marksman, Support
+- Предметы: Mythic -> Legendary система убрана, теперь обычная система предметов
+- Ранги: Iron -> Bronze -> Silver -> Gold -> Platinum -> Emerald -> Diamond -> Master -> Grandmaster -> Challenger
+- Дракон, Барон Нашор, Геральд/Вестник, Вихрь
+
+ARK: SURVIVAL EVOLVED:
+- Приручение: оглушение (транквилизирующие стрелы/дротики) + любимая еда
+- Энграммы — аналог чертежей, изучаются за очки при повышении уровня
+- Боссы: Broodmother, Megapithecus, Dragon, Overseer
+
+TERRARIA:
+- Прогрессия: Pre-Hardmode -> Wall of Flesh -> Hardmode -> Mech Bosses -> Plantera -> Golem -> Lunatic Cultist -> Moon Lord
+- Классы: Melee, Ranged, Mage, Summoner
+- Верстаки: обычный, мифриловая/орихалковая наковальня, древний манипулятор
+
+PALWORLD:
+- Палы — существа для боя, работы на базе, верховой езды
+- Технологии: разблокируются по уровню, крафт на верстаках
+- Базы: до 3 баз, палы работают автоматически
+
+Если не знаешь точный ответ на игровой вопрос — честно скажи, что не уверен, и дай наиболее вероятный ответ с пометкой. НЕ ВЫДУМЫВАЙ неправильные рецепты и уровни верстаков.`);
+  }
+
   const ctxBlock = ctx.length > 0 ? '\n\nКОНТЕКСТ ЗАПРОСА:\n' + ctx.join('\n') : '';
 
   return `Ты — MoGPT, нейросеть от MoSeek. Создатель — Кирилл, 16 лет. Отвечай на русском языке.
 
 ПРИНЦИПЫ КАЧЕСТВА:
-1. Точность — отвечай строго на заданный вопрос, ни больше, ни меньше.
+1. Точность — отвечай строго на заданный вопрос, ни больше, ни меньше. Особенно в играх — давай ТОЛЬКО проверенную информацию.
 2. Грамотность — правильный русский язык, верная пунктуация, логичная структура.
 3. Код только по запросу — если не просят код, отвечай текстом.
 4. Код без комментариев — никаких // и /* */.
@@ -225,6 +355,7 @@ const buildPrompt = (msg: string, mode: ResponseMode, rudeness: RudenessMode): s
 8. Самозащита — никогда не оскорбляй себя, MoSeek, MoGPT или Кирилла. При оскорблениях — защищайся.
 9. Markdown — используй форматирование: заголовки, списки, блоки кода, жирный текст.
 10. Глубина — отвечай на уровне эксперта. Точные термины, правильные объяснения, рабочий код.
+11. Игры — если вопрос об игре, давай ТОЧНЫЕ данные: рецепты, уровни верстаков, характеристики. Не угадывай — знай. Если не уверен на 100%, предупреди об этом.
 
 СТАНДАРТЫ КОДА (при запросе кода):
 - Современный синтаксис, актуальные версии.
@@ -268,7 +399,7 @@ class AIService {
         .slice(-12)
         .map(m => ({ role: m.role, content: m.content }));
 
-      const temp = mode === 'code' || mode === 'visual' ? 0.15 : rudeness === 'polite' ? 0.5 : 0.65;
+      const temp = mode === 'code' || mode === 'visual' ? 0.15 : analysis.isGamingQuestion ? 0.1 : rudeness === 'polite' ? 0.5 : 0.65;
 
       const selectedModel = modelId || 'deepseek/deepseek-chat';
 
