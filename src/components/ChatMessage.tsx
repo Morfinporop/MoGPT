@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Copy, Check } from 'lucide-react';
+import { Copy, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
 import { marked } from 'marked';
 import type { Message } from '../types';
@@ -9,16 +9,21 @@ interface ChatMessageProps {
   message: Message;
 }
 
-// Configure marked
 marked.setOptions({
   breaks: true,
   gfm: true,
 });
 
+const MAX_LENGTH = 800;
+
 export function ChatMessage({ message }: ChatMessageProps) {
   const [copied, setCopied] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(false);
   const isAssistant = message.role === 'assistant';
+
+  const isLong = message.content.length > MAX_LENGTH && !message.isLoading;
+  const displayContent = isLong && !expanded ? message.content.slice(0, MAX_LENGTH) + '...' : message.content;
 
   const copyToClipboard = async () => {
     await navigator.clipboard.writeText(message.content);
@@ -38,9 +43,8 @@ export function ChatMessage({ message }: ChatMessageProps) {
     }
 
     if (isAssistant) {
-      let html = marked.parse(message.content, { async: false }) as string;
-      
-      // Add copy button to code blocks
+      let html = marked.parse(displayContent, { async: false }) as string;
+
       html = html.replace(/<pre><code(.*?)>([\s\S]*?)<\/code><\/pre>/g, (_match, attrs, code) => {
         const decodedCode = code
           .replace(/&lt;/g, '<')
@@ -48,7 +52,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
           .replace(/&amp;/g, '&')
           .replace(/&quot;/g, '"')
           .replace(/&#39;/g, "'");
-        
+
         return `
           <div class="code-block-wrapper relative group/code my-3">
             <pre class="!bg-black/50 !border !border-violet-500/20 rounded-xl overflow-hidden"><code${attrs}>${code}</code></pre>
@@ -79,14 +83,50 @@ export function ChatMessage({ message }: ChatMessageProps) {
               }
             }}
           />
+          {isLong && (
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setExpanded(!expanded)}
+              className="flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-lg bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/20 transition-all"
+            >
+              {expanded ? (
+                <ChevronUp className="w-3.5 h-3.5 text-violet-400" />
+              ) : (
+                <ChevronDown className="w-3.5 h-3.5 text-violet-400" />
+              )}
+              <span className="text-xs text-violet-300">
+                {expanded ? 'Свернуть' : 'Показать полностью'}
+              </span>
+            </motion.button>
+          )}
         </div>
       );
     }
 
     return (
-      <p className="text-[15px] leading-relaxed text-white whitespace-pre-wrap">
-        {message.content}
-      </p>
+      <div>
+        <p className="text-[15px] leading-relaxed text-white whitespace-pre-wrap">
+          {displayContent}
+        </p>
+        {isLong && (
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setExpanded(!expanded)}
+            className="flex items-center gap-1.5 mt-2 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-all"
+          >
+            {expanded ? (
+              <ChevronUp className="w-3.5 h-3.5 text-white/70" />
+            ) : (
+              <ChevronDown className="w-3.5 h-3.5 text-white/70" />
+            )}
+            <span className="text-xs text-white/70">
+              {expanded ? 'Свернуть' : 'Показать полностью'}
+            </span>
+          </motion.button>
+        )}
+      </div>
     );
   };
 
@@ -97,7 +137,6 @@ export function ChatMessage({ message }: ChatMessageProps) {
       transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
       className={`flex gap-3 ${isAssistant ? '' : 'flex-row-reverse'}`}
     >
-      {/* Avatar */}
       <motion.div
         whileHover={{ scale: 1.1 }}
         className={`flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center overflow-hidden ${
@@ -107,21 +146,20 @@ export function ChatMessage({ message }: ChatMessageProps) {
         }`}
       >
         {isAssistant ? (
-          <img 
-            src={MODEL_ICON} 
-            alt="MoGPT" 
+          <img
+            src={MODEL_ICON}
+            alt="MoGPT"
             className="w-5 h-5 object-contain filter brightness-0 invert"
           />
         ) : (
-          <img 
-            src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" 
-            alt="User" 
+          <img
+            src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
+            alt="User"
             className="w-5 h-5 object-contain filter brightness-0 invert"
           />
         )}
       </motion.div>
 
-      {/* Message Bubble */}
       <div className={`group relative max-w-[85%]`}>
         <motion.div
           whileHover={{ scale: 1.005 }}
@@ -133,7 +171,6 @@ export function ChatMessage({ message }: ChatMessageProps) {
         >
           {renderContent()}
 
-          {/* Copy Button */}
           {!message.isLoading && (
             <motion.button
               initial={{ opacity: 0 }}
@@ -154,7 +191,6 @@ export function ChatMessage({ message }: ChatMessageProps) {
           )}
         </motion.div>
 
-        {/* Meta Info */}
         <div className={`flex items-center gap-2 mt-1.5 px-1 ${isAssistant ? '' : 'justify-end'}`}>
           <span className="text-[10px] text-zinc-600">
             {new Date(message.timestamp).toLocaleTimeString('ru-RU', {
