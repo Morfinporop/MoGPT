@@ -8,8 +8,11 @@ export type RudenessMode = 'very_rude' | 'rude' | 'polite';
 interface ExtendedChatState extends ChatState {
   responseMode: ResponseMode;
   rudenessMode: RudenessMode;
+  generatingChatIds: Set<string>;
   setResponseMode: (mode: ResponseMode) => void;
   setRudenessMode: (mode: RudenessMode) => void;
+  setGeneratingChat: (chatId: string, value: boolean) => void;
+  isCurrentChatGenerating: () => boolean;
 }
 
 const createChat = (): Chat => ({
@@ -29,9 +32,28 @@ export const useChatStore = create<ExtendedChatState>()(
       sidebarOpen: false,
       responseMode: 'normal',
       rudenessMode: 'rude',
+      generatingChatIds: new Set<string>(),
 
       setResponseMode: (mode) => set({ responseMode: mode }),
       setRudenessMode: (mode) => set({ rudenessMode: mode }),
+
+      setGeneratingChat: (chatId, value) => {
+        set((state) => {
+          const newSet = new Set(state.generatingChatIds);
+          if (value) {
+            newSet.add(chatId);
+          } else {
+            newSet.delete(chatId);
+          }
+          return { generatingChatIds: newSet };
+        });
+      },
+
+      isCurrentChatGenerating: () => {
+        const state = get();
+        if (!state.currentChatId) return false;
+        return state.generatingChatIds.has(state.currentChatId);
+      },
 
       createNewChat: () => {
         const newChat = createChat();
@@ -45,7 +67,7 @@ export const useChatStore = create<ExtendedChatState>()(
       deleteChat: (id) => {
         set((state) => {
           const newChats = state.chats.filter(c => c.id !== id);
-          const newCurrentId = state.currentChatId === id 
+          const newCurrentId = state.currentChatId === id
             ? (newChats.length > 0 ? newChats[0].id : null)
             : state.currentChatId;
           return {
@@ -70,7 +92,7 @@ export const useChatStore = create<ExtendedChatState>()(
         set((state) => {
           let currentChatId = state.currentChatId;
           let chats = [...state.chats];
-          
+
           if (!currentChatId) {
             const newChat = createChat();
             currentChatId = newChat.id;
@@ -82,7 +104,7 @@ export const useChatStore = create<ExtendedChatState>()(
               const newTitle = chat.messages.length === 0 && message.role === 'user'
                 ? message.content.slice(0, 40) + (message.content.length > 40 ? '...' : '')
                 : chat.title;
-                
+
               return {
                 ...chat,
                 title: newTitle,
