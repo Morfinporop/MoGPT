@@ -252,24 +252,21 @@ export function ChatInput() {
         </div>
 
         <div className="relative" ref={rudenessRef}>
-<motion.button
-  type="submit"
-  disabled={!input.trim() || generating || limitReached || isOverLimit}
-  whileHover={{ scale: 1.05 }}
-  whileTap={{ scale: 0.95 }}
-  className={`flex-shrink-0 w-10 h-10 rounded-xl transition-all duration-200 ml-3 flex items-center justify-center ${
-    input.trim() && !generating && !limitReached && !isOverLimit
-      ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/25'
-      : 'bg-white/5 text-zinc-600 cursor-not-allowed'
-  }`}
->
-  {limitReached ? (
-    <Lock className="w-5 h-5" />
-  ) : (
-    <Send className={`w-5 h-5 ${generating ? 'animate-pulse' : ''}`} />
-  )}
-</motion.button>
-
+          <motion.button
+            type="button"
+            whileHover={{ scale: limitReached ? 1 : 1.02 }}
+            whileTap={{ scale: limitReached ? 1 : 0.98 }}
+            onClick={() => { if (!limitReached) { setShowRudeness(!showRudeness); setShowModes(false); } }}
+            disabled={limitReached}
+            className={`flex items-center justify-center w-[52px] h-[52px] rounded-2xl glass-strong transition-all border border-white/5 ${
+              limitReached ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/10 hover:border-orange-500/30'
+            }`}
+          >
+            <currentRudeness.icon className={`w-5 h-5 ${
+              rudenessMode === 'very_rude' ? 'text-red-400' :
+              rudenessMode === 'rude' ? 'text-orange-400' : 'text-green-400'
+            }`} />
+          </motion.button>
 
           <AnimatePresence>
             {showRudeness && (
@@ -328,7 +325,7 @@ export function ChatInput() {
             isOverLimit ? 'border-red-500/50' : 'border-white/5'
           } ${limitReached ? 'opacity-50' : ''}`}
         >
-          <div className="relative flex items-center min-h-[52px] px-4">
+          <div className="relative flex items-center min-h-[52px] pl-4 pr-2">
             <div className="flex-1 flex items-center">
               <textarea
                 ref={textareaRef}
@@ -351,7 +348,7 @@ export function ChatInput() {
             </div>
 
             {!isUnlimitedUser && input.length > 0 && (
-              <span className={`text-[11px] mr-2 flex-shrink-0 ${
+              <span className={`text-[11px] mr-1 flex-shrink-0 ${
                 charCount >= CHAR_LIMIT ? 'text-red-400' : charCount > CHAR_LIMIT * 0.8 ? 'text-orange-400' : 'text-zinc-600'
               }`}>
                 {charCount}/{CHAR_LIMIT}
@@ -363,7 +360,7 @@ export function ChatInput() {
               disabled={!input.trim() || generating || limitReached || isOverLimit}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className={`flex-shrink-0 w-10 h-10 rounded-xl transition-all duration-200 ml-2 flex items-center justify-center ${
+              className={`flex-shrink-0 w-10 h-10 rounded-xl transition-all duration-200 ml-1 flex items-center justify-center ${
                 input.trim() && !generating && !limitReached && !isOverLimit
                   ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/25'
                   : 'bg-white/5 text-zinc-600 cursor-not-allowed'
