@@ -1,12 +1,12 @@
 import type { AIModel } from '../types';
 
 // Светлая иконка для MoSeek
-export const MODEL_ICON = 'https://icons8.ru/icon/sr2a6KIEQh5A/mind-map';
+export const MODEL_ICON = 'https://img.icons8.com/?size=100&id=77iHQnb2ZTjZ&format=png&color=1A1A1A';
 
 export const AI_MODELS: AIModel[] = [
   {
     id: 'deepseek/deepseek-chat',
-    name: 'MoSeek V1',
+    name: 'MoSeek V3',
     description: 'Мощная модель',
     provider: 'MoGPT',
     icon: MODEL_ICON,
