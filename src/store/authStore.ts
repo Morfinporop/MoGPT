@@ -12,9 +12,13 @@ export interface User {
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
+  guestMessages: number;
+  maxGuestMessages: number;
   register: (name: string, email: string, password: string) => { success: boolean; error?: string };
   login: (email: string, password: string) => { success: boolean; error?: string };
   logout: () => void;
+  incrementGuestMessages: () => void;
+  canSendMessage: () => boolean;
 }
 
 interface StoredUser {
@@ -97,9 +101,23 @@ const generateAvatar = (name: string): string => {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       isAuthenticated: false,
+      guestMessages: 0,
+      maxGuestMessages: 10,
+
+      canSendMessage: () => {
+        const state = get();
+        if (state.isAuthenticated) return true;
+        return state.guestMessages < state.maxGuestMessages;
+      },
+
+      incrementGuestMessages: () => {
+        set((state) => ({
+          guestMessages: state.guestMessages + 1,
+        }));
+      },
 
       register: (name, email, password) => {
         const storedUsers = getStoredUsers();
@@ -193,6 +211,7 @@ export const useAuthStore = create<AuthState>()(
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
+        guestMessages: state.guestMessages,
       }),
     }
   )
