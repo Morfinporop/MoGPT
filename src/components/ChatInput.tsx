@@ -17,8 +17,6 @@ const RUDENESS_MODES: { id: RudenessMode; label: string; icon: typeof Flame; des
   { id: 'polite', label: 'Вежливый', icon: Smile, desc: 'Без мата и грубости' },
 ];
 
-const generatingChats = new Set<string>();
-
 export function ChatInput() {
   const [input, setInput] = useState('');
   const [showModes, setShowModes] = useState(false);
@@ -37,11 +35,13 @@ export function ChatInput() {
     setResponseMode,
     rudenessMode,
     setRudenessMode,
+    setGeneratingChat,
+    isCurrentChatGenerating,
   } = useChatStore();
 
   const { canSendMessage, incrementGuestMessages, isAuthenticated } = useAuthStore();
 
-  const isCurrentChatGenerating = currentChatId ? generatingChats.has(currentChatId) : false;
+  const generating = isCurrentChatGenerating();
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -67,7 +67,7 @@ export function ChatInput() {
     e?.preventDefault();
 
     const trimmedInput = input.trim();
-    if (!trimmedInput || isCurrentChatGenerating) return;
+    if (!trimmedInput || generating) return;
 
     if (!canSendMessage()) {
       setShowLimitWarning(true);
@@ -75,15 +75,10 @@ export function ChatInput() {
       return;
     }
 
-    const chatId = currentChatId;
-    if (!chatId) return;
-
     setInput('');
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
     }
-
-    generatingChats.add(chatId);
 
     if (!isAuthenticated) {
       incrementGuestMessages();
@@ -93,6 +88,11 @@ export function ChatInput() {
       role: 'user',
       content: trimmedInput,
     });
+
+    const chatId = useChatStore.getState().currentChatId;
+    if (!chatId) return;
+
+    setGeneratingChat(chatId, true);
 
     const assistantId = addMessage({
       role: 'assistant',
@@ -122,7 +122,7 @@ export function ChatInput() {
       console.error('Error:', error);
       updateMessage(assistantId, 'Бля, что-то пошло не так. Попробуй ещё раз.', '');
     } finally {
-      generatingChats.delete(chatId);
+      setGeneratingChat(chatId, false);
     }
   };
 
@@ -302,7 +302,7 @@ export function ChatInput() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder={limitReached ? 'Зарегистрируйся для продолжения...' : 'Напиши что-нибудь...'}
-                disabled={isCurrentChatGenerating || limitReached}
+                disabled={generating || limitReached}
                 rows={1}
                 className="w-full bg-transparent text-white placeholder-zinc-600 resize-none text-[15px] leading-relaxed py-1 max-h-[160px] focus:outline-none"
                 style={{
@@ -315,11 +315,11 @@ export function ChatInput() {
 
             <motion.button
               type="submit"
-              disabled={!input.trim() || isCurrentChatGenerating || limitReached}
+              disabled={!input.trim() || generating || limitReached}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className={`flex-shrink-0 p-2.5 rounded-xl transition-all duration-200 mb-[2px] ${
-                input.trim() && !isCurrentChatGenerating && !limitReached
+                input.trim() && !generating && !limitReached
                   ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/25'
                   : 'bg-white/5 text-zinc-600 cursor-not-allowed'
               }`}
@@ -327,7 +327,7 @@ export function ChatInput() {
               {limitReached ? (
                 <Lock className="w-5 h-5" />
               ) : (
-                <Send className={`w-5 h-5 ${isCurrentChatGenerating ? 'animate-pulse' : ''}`} />
+                <Send className={`w-5 h-5 ${generating ? 'animate-pulse' : ''}`} />
               )}
             </motion.button>
           </div>
