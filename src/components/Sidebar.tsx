@@ -6,7 +6,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Turnstile } from '@marsidev/react-turnstile';
 
 const TURNSTILE_SITE_KEY = '0x4AAAAAACa5EobYKh_TrmuZ';
-const AI_ICON = 'https://p7.hiclipart.com/preview/66/601/95/neuron-nervous-system-neurodegeneration-synapse-brain-brain-thumbnail.jpg';
+const AI_ICON = 'https://img.freepik.com/free-photo/black-white-desert-cacti_23-2151327450.jpg?semt=ais_hybrid&w=740&q=80';
 
 type ModalType = 'terms' | 'privacy' | 'cookies' | 'profile' | 'auth' | null;
 
