@@ -72,16 +72,16 @@ export function Header() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -8, scale: 0.95 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute top-full left-0 mt-2 w-72 glass-strong rounded-xl border border-white/10 overflow-hidden z-50"
+                  className="absolute top-full left-0 mt-2 w-72 glass-strong rounded-xl border border-white/10 overflow-hidden z-50 max-h-[70vh] overflow-y-auto"
                 >
-                  <div className="p-2.5 border-b border-white/5">
+                  <div className="p-2.5 border-b border-white/5 sticky top-0 glass-strong z-10">
                     <p className="text-xs text-zinc-500 px-2">Выбор модели</p>
                   </div>
                   {AI_MODELS.map((model) => (
                     <button
                       key={model.id}
                       onClick={() => handleSelectModel(model.id)}
-                      className={`w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-white/5 transition-all ${
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/5 transition-all ${
                         selectedModel === model.id ? 'bg-violet-500/10' : ''
                       }`}
                     >
