@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Code, Sparkles, MessageCircle, Flame, Smile, Angry } from 'lucide-react';
+import { Send, Code, Sparkles, MessageCircle, Flame, Smile, Angry, Lock } from 'lucide-react';
 import { useChatStore, type ResponseMode, type RudenessMode } from '../store/chatStore';
+import { useAuthStore } from '../store/authStore';
 import { aiService } from '../services/aiService';
 
 const MODES: { id: ResponseMode; label: string; icon: typeof Code; desc: string }[] = [
@@ -20,6 +21,7 @@ export function ChatInput() {
   const [input, setInput] = useState('');
   const [showModes, setShowModes] = useState(false);
   const [showRudeness, setShowRudeness] = useState(false);
+  const [showLimitWarning, setShowLimitWarning] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const modesRef = useRef<HTMLDivElement>(null);
   const rudenessRef = useRef<HTMLDivElement>(null);
@@ -35,6 +37,8 @@ export function ChatInput() {
     rudenessMode,
     setRudenessMode,
   } = useChatStore();
+
+  const { canSendMessage, incrementGuestMessages, isAuthenticated, guestMessages, maxGuestMessages } = useAuthStore();
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -62,12 +66,22 @@ export function ChatInput() {
     const trimmedInput = input.trim();
     if (!trimmedInput || isGenerating) return;
 
+    if (!canSendMessage()) {
+      setShowLimitWarning(true);
+      setTimeout(() => setShowLimitWarning(false), 5000);
+      return;
+    }
+
     setInput('');
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
     }
 
     setGenerating(true);
+
+    if (!isAuthenticated) {
+      incrementGuestMessages();
+    }
 
     addMessage({
       role: 'user',
@@ -115,17 +129,55 @@ export function ChatInput() {
 
   const currentMode = MODES.find(m => m.id === responseMode) || MODES[0];
   const currentRudeness = RUDENESS_MODES.find(m => m.id === rudenessMode) || RUDENESS_MODES[1];
+  const limitReached = !canSendMessage();
 
   return (
     <div className="w-full max-w-3xl mx-auto px-4">
+      <AnimatePresence>
+        {showLimitWarning && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="flex items-center gap-2 px-4 py-3 mb-3 rounded-xl bg-orange-500/10 border border-orange-500/20"
+          >
+            <Lock className="w-4 h-4 text-orange-400 flex-shrink-0" />
+            <p className="text-sm text-orange-300">
+              Лимит исчерпан. Зарегистрируйся для безлимитного доступа.
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {!isAuthenticated && (
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <div className="flex items-center gap-1.5">
+            {Array.from({ length: maxGuestMessages }).map((_, i) => (
+              <div
+                key={i}
+                className={`w-1.5 h-1.5 rounded-full transition-all ${
+                  i < guestMessages ? 'bg-violet-500' : 'bg-zinc-700'
+                }`}
+              />
+            ))}
+          </div>
+          <span className="text-[11px] text-zinc-600">
+            {guestMessages}/{maxGuestMessages}
+          </span>
+        </div>
+      )}
+
       <div className="flex items-end gap-2">
         <div className="relative" ref={modesRef}>
           <motion.button
             type="button"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => { setShowModes(!showModes); setShowRudeness(false); }}
-            className="flex items-center justify-center w-[52px] h-[52px] rounded-2xl glass-strong hover:bg-white/10 transition-all border border-white/5 hover:border-violet-500/30"
+            whileHover={{ scale: limitReached ? 1 : 1.02 }}
+            whileTap={{ scale: limitReached ? 1 : 0.98 }}
+            onClick={() => { if (!limitReached) { setShowModes(!showModes); setShowRudeness(false); } }}
+            disabled={limitReached}
+            className={`flex items-center justify-center w-[52px] h-[52px] rounded-2xl glass-strong transition-all border border-white/5 ${
+              limitReached ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/10 hover:border-violet-500/30'
+            }`}
           >
             <currentMode.icon className="w-5 h-5 text-violet-400" />
           </motion.button>
@@ -178,10 +230,13 @@ export function ChatInput() {
         <div className="relative" ref={rudenessRef}>
           <motion.button
             type="button"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => { setShowRudeness(!showRudeness); setShowModes(false); }}
-            className="flex items-center justify-center w-[52px] h-[52px] rounded-2xl glass-strong hover:bg-white/10 transition-all border border-white/5 hover:border-orange-500/30"
+            whileHover={{ scale: limitReached ? 1 : 1.02 }}
+            whileTap={{ scale: limitReached ? 1 : 0.98 }}
+            onClick={() => { if (!limitReached) { setShowRudeness(!showRudeness); setShowModes(false); } }}
+            disabled={limitReached}
+            className={`flex items-center justify-center w-[52px] h-[52px] rounded-2xl glass-strong transition-all border border-white/5 ${
+              limitReached ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/10 hover:border-orange-500/30'
+            }`}
           >
             <currentRudeness.icon className={`w-5 h-5 ${
               rudenessMode === 'very_rude' ? 'text-red-400' :
@@ -247,7 +302,9 @@ export function ChatInput() {
 
         <form
           onSubmit={handleSubmit}
-          className="flex-1 relative rounded-2xl overflow-hidden glass-strong shadow-lg shadow-violet-500/5 border border-white/5"
+          className={`flex-1 relative rounded-2xl overflow-hidden glass-strong shadow-lg shadow-violet-500/5 border border-white/5 ${
+            limitReached ? 'opacity-50' : ''
+          }`}
         >
           <div className="relative flex items-end gap-2 px-4 py-2">
             <div className="flex-1 flex items-center min-h-[36px]">
@@ -256,8 +313,8 @@ export function ChatInput() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Напиши что-нибудь..."
-                disabled={isGenerating}
+                placeholder={limitReached ? 'Зарегистрируйся для продолжения...' : 'Напиши что-нибудь...'}
+                disabled={isGenerating || limitReached}
                 rows={1}
                 className="w-full bg-transparent text-white placeholder-zinc-600 resize-none text-[15px] leading-relaxed py-1 max-h-[160px] focus:outline-none"
                 style={{
@@ -270,16 +327,20 @@ export function ChatInput() {
 
             <motion.button
               type="submit"
-              disabled={!input.trim() || isGenerating}
+              disabled={!input.trim() || isGenerating || limitReached}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className={`flex-shrink-0 p-2.5 rounded-xl transition-all duration-200 mb-[2px] ${
-                input.trim() && !isGenerating
+                input.trim() && !isGenerating && !limitReached
                   ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/25'
                   : 'bg-white/5 text-zinc-600 cursor-not-allowed'
               }`}
             >
-              <Send className={`w-5 h-5 ${isGenerating ? 'animate-pulse' : ''}`} />
+              {limitReached ? (
+                <Lock className="w-5 h-5" />
+              ) : (
+                <Send className={`w-5 h-5 ${isGenerating ? 'animate-pulse' : ''}`} />
+              )}
             </motion.button>
           </div>
         </form>
