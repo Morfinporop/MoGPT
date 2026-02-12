@@ -30,23 +30,23 @@ function AuthModal({ onClose }: { onClose: () => void }) {
     setTimeout(() => setShake(false), 500);
   };
 
-  const checkExisting = (): { ok: boolean } => {
+  const checkExisting = (): boolean => {
     const storedRaw = localStorage.getItem('moseek_users_db');
-    if (!storedRaw) return { ok: true };
+    if (!storedRaw) return true;
     try {
       const users = JSON.parse(storedRaw) as any[];
       if (users.find((u: any) => u.email?.toLowerCase() === email.toLowerCase().trim())) {
         setError('Этот email уже зарегистрирован');
         triggerShake();
-        return { ok: false };
+        return false;
       }
       if (users.find((u: any) => u.name?.toLowerCase() === name.trim().toLowerCase())) {
         setError('Это имя уже занято');
         triggerShake();
-        return { ok: false };
+        return false;
       }
     } catch {}
-    return { ok: true };
+    return true;
   };
 
   const handleSubmit = async () => {
@@ -54,6 +54,13 @@ function AuthModal({ onClose }: { onClose: () => void }) {
 
     if (!email.trim()) {
       setError('Введи email');
+      triggerShake();
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Некорректный email');
       triggerShake();
       return;
     }
@@ -86,8 +93,7 @@ function AuthModal({ onClose }: { onClose: () => void }) {
         return;
       }
 
-      const { ok } = checkExisting();
-      if (!ok) return;
+      if (!checkExisting()) return;
     } else {
       if (!password) {
         setError('Введи пароль');
@@ -308,8 +314,9 @@ function AuthModal({ onClose }: { onClose: () => void }) {
                   <motion.div
                     initial={false}
                     animate={{
-                      height: mode === 'register' ? 'auto' : 0,
+                      height: mode === 'register' ? 48 : 0,
                       opacity: mode === 'register' ? 1 : 0,
+                      marginBottom: mode === 'register' ? 0 : -12,
                     }}
                     transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
                     style={{ overflow: 'hidden' }}
@@ -320,7 +327,7 @@ function AuthModal({ onClose }: { onClose: () => void }) {
                       onChange={(e) => setName(e.target.value)}
                       placeholder="Имя"
                       tabIndex={mode === 'register' ? 0 : -1}
-                      className="w-full h-[48px] px-4 rounded-xl glass-light text-white placeholder-zinc-600 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/30 border border-white/5 focus:border-violet-500/30 transition-all mb-3"
+                      className="w-full h-[48px] px-4 rounded-xl glass-light text-white placeholder-zinc-600 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/30 border border-white/5 focus:border-violet-500/30 transition-colors"
                     />
                   </motion.div>
 
@@ -329,7 +336,7 @@ function AuthModal({ onClose }: { onClose: () => void }) {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Email"
-                    className="w-full h-[48px] px-4 rounded-xl glass-light text-white placeholder-zinc-600 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/30 border border-white/5 focus:border-violet-500/30 transition-all"
+                    className="w-full h-[48px] px-4 rounded-xl glass-light text-white placeholder-zinc-600 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/30 border border-white/5 focus:border-violet-500/30 transition-colors"
                   />
 
                   <div className="relative">
@@ -338,7 +345,7 @@ function AuthModal({ onClose }: { onClose: () => void }) {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Пароль"
-                      className="w-full h-[48px] px-4 pr-11 rounded-xl glass-light text-white placeholder-zinc-600 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/30 border border-white/5 focus:border-violet-500/30 transition-all"
+                      className="w-full h-[48px] px-4 pr-11 rounded-xl glass-light text-white placeholder-zinc-600 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/30 border border-white/5 focus:border-violet-500/30 transition-colors"
                     />
                     <button
                       type="button"
