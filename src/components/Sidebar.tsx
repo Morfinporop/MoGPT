@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, MessageSquare, Plus, LogOut, Loader2 } from 'lucide-react';
+import { X, MessageSquare, Plus, LogOut, Loader2, Camera } from 'lucide-react';
 import { useChatStore } from '../store/chatStore';
 import { useAuthStore } from '../store/authStore';
 import { useState, useRef, useEffect } from 'react';
@@ -93,9 +93,27 @@ export function Sidebar() {
     createNewChat,
   } = useChatStore();
 
-  const { user, isAuthenticated, logout, guestMessages, maxGuestMessages } = useAuthStore();
+  const { user, isAuthenticated, logout, guestMessages, maxGuestMessages, updateAvatar } = useAuthStore();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [activeModal, setActiveModal] = useState<ModalType>(null);
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) return;
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const result = ev.target?.result as string;
+      if (result) {
+        updateAvatar(result);
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
 
   return (
     <AnimatePresence>
@@ -209,7 +227,7 @@ export function Sidebar() {
                   <img
                     src={user?.avatar}
                     alt={user?.name}
-                    className="w-10 h-10 rounded-full flex-shrink-0 border-2 border-violet-500/30"
+                    className="w-10 h-10 rounded-full flex-shrink-0 border-2 border-violet-500/30 object-cover"
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-white font-medium truncate">{user?.name}</p>
@@ -265,6 +283,14 @@ export function Sidebar() {
         </>
       )}
 
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleAvatarChange}
+        className="hidden"
+      />
+
       <AnimatePresence>
         {activeModal === 'profile' && (
           <>
@@ -295,11 +321,19 @@ export function Sidebar() {
 
               <div className="px-5 py-6">
                 <div className="flex items-center gap-4 mb-6">
-                  <img
-                    src={user?.avatar}
-                    alt={user?.name}
-                    className="w-16 h-16 rounded-full border-2 border-violet-500/30 flex-shrink-0"
-                  />
+                  <div className="relative group flex-shrink-0">
+                    <img
+                      src={user?.avatar}
+                      alt={user?.name}
+                      className="w-16 h-16 rounded-full border-2 border-violet-500/30 object-cover"
+                    />
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Camera className="w-5 h-5 text-white" />
+                    </button>
+                  </div>
                   <div className="min-w-0">
                     <p className="text-base text-white font-semibold truncate">{user?.name}</p>
                     <p className="text-xs text-zinc-500 truncate">{user?.email}</p>
@@ -365,26 +399,14 @@ export function Sidebar() {
                   {MODAL_CONTENT[activeModal].content.split('\n\n').map((block, i) => {
                     const lines = block.trim();
                     if (!lines) return null;
-
                     if (lines.startsWith('©')) {
-                      return (
-                        <p key={i} className="text-[10px] text-zinc-600 pt-2 border-t border-white/5">
-                          {lines}
-                        </p>
-                      );
+                      return <p key={i} className="text-[10px] text-zinc-600 pt-2 border-t border-white/5">{lines}</p>;
                     }
-
                     if (lines.startsWith('Последнее')) {
-                      return (
-                        <p key={i} className="text-[10px] text-zinc-500 italic">
-                          {lines}
-                        </p>
-                      );
+                      return <p key={i} className="text-[10px] text-zinc-500 italic">{lines}</p>;
                     }
-
                     const firstLine = lines.split('\n')[0];
                     const rest = lines.split('\n').slice(1).join(' ');
-
                     if (rest) {
                       return (
                         <div key={i}>
@@ -393,10 +415,7 @@ export function Sidebar() {
                         </div>
                       );
                     }
-
-                    return (
-                      <p key={i} className="text-[11px] text-zinc-400 leading-relaxed">{lines}</p>
-                    );
+                    return <p key={i} className="text-[11px] text-zinc-400 leading-relaxed">{lines}</p>;
                   })}
                 </div>
               </div>
@@ -448,7 +467,7 @@ function AuthModal({ onClose }: { onClose: () => void }) {
 
   const triggerShake = () => {
     setShake(true);
-    setTimeout(() => setShake(false), 500);
+    setTimeout(() => setShake(false), 400);
   };
 
   const checkExisting = (): boolean => {
@@ -458,12 +477,10 @@ function AuthModal({ onClose }: { onClose: () => void }) {
       const users = JSON.parse(storedRaw) as any[];
       if (users.find((u: any) => u.email?.toLowerCase() === email.toLowerCase().trim())) {
         setError('Этот email уже зарегистрирован');
-        triggerShake();
         return false;
       }
       if (users.find((u: any) => u.name?.toLowerCase() === name.trim().toLowerCase())) {
         setError('Это имя уже занято');
-        triggerShake();
         return false;
       }
     } catch {}
@@ -598,13 +615,11 @@ function AuthModal({ onClose }: { onClose: () => void }) {
   const handleCodeChange = (index: number, value: string) => {
     if (value.length > 1) value = value[value.length - 1];
     if (!/^\d*$/.test(value)) return;
-
     const newCode = code.split('');
     while (newCode.length < 6) newCode.push('');
     newCode[index] = value;
     const joined = newCode.join('').slice(0, 6);
     setCode(joined);
-
     if (value && index < 5) {
       codeInputsRef.current[index + 1]?.focus();
     }
@@ -620,15 +635,13 @@ function AuthModal({ onClose }: { onClose: () => void }) {
     e.preventDefault();
     const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
     setCode(pasted);
-    const focusIndex = Math.min(pasted.length, 5);
-    codeInputsRef.current[focusIndex]?.focus();
+    codeInputsRef.current[Math.min(pasted.length, 5)]?.focus();
   };
 
   const handleResend = async () => {
     if (countdown > 0 || !turnstileToken) return;
     setIsLoading(true);
     setError('');
-
     const result = await sendVerificationCode(email, turnstileToken);
     if (result.success) {
       setCountdown(60);
@@ -636,7 +649,6 @@ function AuthModal({ onClose }: { onClose: () => void }) {
     } else {
       setError(result.error || 'Ошибка повторной отправки');
     }
-
     setIsLoading(false);
   };
 
@@ -656,8 +668,8 @@ function AuthModal({ onClose }: { onClose: () => void }) {
         className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] max-w-[calc(100vw-32px)] max-h-[90vh] overflow-y-auto glass-strong border border-white/10 rounded-2xl z-[70]"
       >
         <motion.div
-          animate={shake ? { x: [-8, 8, -8, 8, 0] } : {}}
-          transition={{ duration: 0.4 }}
+          animate={shake ? { x: [-4, 4, -4, 4, 0] } : {}}
+          transition={{ duration: 0.3 }}
         >
           <div className="px-6 pt-8 pb-4 text-center">
             <motion.div
@@ -666,13 +678,8 @@ function AuthModal({ onClose }: { onClose: () => void }) {
               transition={{ type: 'spring', stiffness: 200 }}
               className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-violet-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-2xl shadow-violet-500/30 glow-soft"
             >
-              <img
-                src={AI_ICON}
-                alt="AI"
-                className="w-8 h-8 object-contain"
-              />
+              <img src={AI_ICON} alt="AI" className="w-8 h-8 object-contain" />
             </motion.div>
-
             <h2 className="text-xl font-bold text-white mb-1">MoSeek</h2>
             <p className="text-xs text-zinc-500">
               {step === 'verify'
@@ -696,9 +703,7 @@ function AuthModal({ onClose }: { onClose: () => void }) {
                     type="button"
                     onClick={() => { setMode('login'); setError(''); }}
                     className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
-                      mode === 'login'
-                        ? 'bg-violet-500/20 text-violet-300'
-                        : 'text-zinc-500 hover:text-zinc-400'
+                      mode === 'login' ? 'bg-violet-500/20 text-violet-300' : 'text-zinc-500 hover:text-zinc-400'
                     }`}
                   >
                     Вход
@@ -707,9 +712,7 @@ function AuthModal({ onClose }: { onClose: () => void }) {
                     type="button"
                     onClick={() => { setMode('register'); setError(''); }}
                     className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
-                      mode === 'register'
-                        ? 'bg-violet-500/20 text-violet-300'
-                        : 'text-zinc-500 hover:text-zinc-400'
+                      mode === 'register' ? 'bg-violet-500/20 text-violet-300' : 'text-zinc-500 hover:text-zinc-400'
                     }`}
                   >
                     Регистрация
@@ -735,21 +738,23 @@ function AuthModal({ onClose }: { onClose: () => void }) {
                   <motion.div
                     initial={false}
                     animate={{
-                      height: mode === 'register' ? 48 : 0,
+                      height: mode === 'register' ? 60 : 0,
                       opacity: mode === 'register' ? 1 : 0,
                       marginBottom: mode === 'register' ? 0 : -12,
                     }}
                     transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
                     style={{ overflow: 'hidden' }}
                   >
-                    <input
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Имя"
-                      tabIndex={mode === 'register' ? 0 : -1}
-                      className="w-full h-[48px] px-4 rounded-xl glass-light text-white placeholder-zinc-600 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/30 border border-white/5 focus:border-violet-500/30 transition-colors"
-                    />
+                    <div className="pb-3">
+                      <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="Имя"
+                        tabIndex={mode === 'register' ? 0 : -1}
+                        className="w-full h-[48px] px-4 rounded-xl glass-light text-white placeholder-zinc-600 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/30 border border-white/5 focus:border-violet-500/30 transition-colors"
+                      />
+                    </div>
                   </motion.div>
 
                   <input
@@ -784,10 +789,7 @@ function AuthModal({ onClose }: { onClose: () => void }) {
                       onSuccess={(token) => setTurnstileToken(token)}
                       onError={() => setTurnstileToken('')}
                       onExpire={() => setTurnstileToken('')}
-                      options={{
-                        theme: 'dark',
-                        size: 'flexible',
-                      }}
+                      options={{ theme: 'dark', size: 'flexible' }}
                     />
                   </div>
 
@@ -860,11 +862,7 @@ function AuthModal({ onClose }: { onClose: () => void }) {
                   onClick={handleVerifyAndComplete}
                   className="w-full h-[48px] rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white font-medium text-sm shadow-xl shadow-violet-500/20 hover:shadow-violet-500/40 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {isLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <span>Подтвердить</span>
-                  )}
+                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>Подтвердить</span>}
                 </motion.button>
 
                 <div className="flex justify-center">
@@ -873,9 +871,7 @@ function AuthModal({ onClose }: { onClose: () => void }) {
                     onClick={handleResend}
                     disabled={countdown > 0 || isLoading}
                     className={`text-xs transition-colors ${
-                      countdown > 0
-                        ? 'text-zinc-600 cursor-not-allowed'
-                        : 'text-violet-400 hover:text-violet-300'
+                      countdown > 0 ? 'text-zinc-600 cursor-not-allowed' : 'text-violet-400 hover:text-violet-300'
                     }`}
                   >
                     {countdown > 0 ? `Повторить через ${countdown}с` : 'Отправить снова'}
