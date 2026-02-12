@@ -3,16 +3,8 @@ import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { ChatContainer } from './components/ChatContainer';
 import { ChatInput } from './components/ChatInput';
-import { AuthScreen } from './components/AuthScreen';
-import { useAuthStore } from './store/authStore';
 
 export function App() {
-  const { isAuthenticated } = useAuthStore();
-
-  if (!isAuthenticated) {
-    return <AuthScreen />;
-  }
-
   return (
     <div className="relative min-h-screen bg-[#050508] overflow-hidden">
       <Background />
