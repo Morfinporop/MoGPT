@@ -45,9 +45,10 @@ export function ChatInput() {
 
   useEffect(() => {
     if (textareaRef.current) {
-      textareaRef.current.style.height = '36px';
-      const scrollHeight = textareaRef.current.scrollHeight;
-      textareaRef.current.style.height = `${Math.max(36, Math.min(scrollHeight, 160))}px`;
+      textareaRef.current.style.height = '52px';
+      if (textareaRef.current.scrollHeight > 52) {
+        textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 160)}px`;
+      }
     }
   }, [input]);
 
@@ -78,7 +79,7 @@ export function ChatInput() {
 
     setInput('');
     if (textareaRef.current) {
-      textareaRef.current.style.height = '36px';
+      textareaRef.current.style.height = '52px';
     }
 
     if (!isAuthenticated) {
@@ -291,12 +292,12 @@ export function ChatInput() {
 
         <form
           onSubmit={handleSubmit}
-          className={`flex-1 relative rounded-2xl glass-strong shadow-lg shadow-violet-500/5 border border-white/5 min-h-[52px] ${
+          className={`flex-1 relative rounded-2xl glass-strong shadow-lg shadow-violet-500/5 border border-white/5 ${
             limitReached ? 'opacity-50' : ''
           }`}
         >
-          <div className="relative flex items-end gap-2 px-4 min-h-[52px]">
-            <div className="flex-1 flex items-center py-2">
+          <div className="relative flex items-center min-h-[52px] px-4">
+            <div className="flex-1">
               <textarea
                 ref={textareaRef}
                 value={input}
@@ -305,35 +306,34 @@ export function ChatInput() {
                 placeholder={limitReached ? 'Зарегистрируйся для продолжения...' : 'Напиши что-нибудь...'}
                 disabled={generating || limitReached}
                 rows={1}
-                className="w-full bg-transparent text-white placeholder-zinc-600 resize-none text-[15px] leading-relaxed max-h-[160px] focus:outline-none"
+                className="w-full bg-transparent text-white placeholder-zinc-600 resize-none text-[15px] leading-relaxed max-h-[160px] focus:outline-none py-[14px]"
                 style={{
                   outline: 'none',
                   border: 'none',
                   boxShadow: 'none',
-                  height: '36px',
+                  height: '52px',
+                  minHeight: '52px',
                 }}
               />
             </div>
 
-            <div className="flex items-center pb-2">
-              <motion.button
-                type="submit"
-                disabled={!input.trim() || generating || limitReached}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className={`flex-shrink-0 p-2.5 rounded-xl transition-all duration-200 ${
-                  input.trim() && !generating && !limitReached
-                    ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/25'
-                    : 'bg-white/5 text-zinc-600 cursor-not-allowed'
-                }`}
-              >
-                {limitReached ? (
-                  <Lock className="w-5 h-5" />
-                ) : (
-                  <Send className={`w-5 h-5 ${generating ? 'animate-pulse' : ''}`} />
-                )}
-              </motion.button>
-            </div>
+            <motion.button
+              type="submit"
+              disabled={!input.trim() || generating || limitReached}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className={`flex-shrink-0 p-2.5 rounded-xl transition-all duration-200 ml-2 ${
+                input.trim() && !generating && !limitReached
+                  ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/25'
+                  : 'bg-white/5 text-zinc-600 cursor-not-allowed'
+              }`}
+            >
+              {limitReached ? (
+                <Lock className="w-5 h-5" />
+              ) : (
+                <Send className={`w-5 h-5 ${generating ? 'animate-pulse' : ''}`} />
+              )}
+            </motion.button>
           </div>
         </form>
       </div>
