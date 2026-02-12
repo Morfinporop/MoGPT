@@ -1,9 +1,10 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, MessageSquare, Plus } from 'lucide-react';
+import { X, MessageSquare, Plus, LogOut } from 'lucide-react';
 import { useChatStore } from '../store/chatStore';
+import { useAuthStore } from '../store/authStore';
 import { useState } from 'react';
 
-type ModalType = 'terms' | 'privacy' | 'cookies' | null;
+type ModalType = 'terms' | 'privacy' | 'cookies' | 'profile' | null;
 
 const MODAL_CONTENT = {
   terms: {
@@ -88,7 +89,16 @@ export function Sidebar() {
     createNewChat,
   } = useChatStore();
 
+  const { user, logout } = useAuthStore();
+
   const [activeModal, setActiveModal] = useState<ModalType>(null);
+
+  const initials = user?.name
+    ?.split(' ')
+    .map(w => w[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2) || '?';
 
   return (
     <AnimatePresence>
@@ -193,28 +203,51 @@ export function Sidebar() {
               )}
             </div>
 
-            <div className="p-4 border-t border-white/5">
-              <div className="flex items-center justify-center gap-3 text-[10px]">
-                <button
-                  onClick={() => setActiveModal('terms')}
-                  className="text-zinc-500 hover:text-violet-400 transition-colors"
-                >
-                  Terms of Use
-                </button>
-                <span className="text-zinc-700">•</span>
-                <button
-                  onClick={() => setActiveModal('privacy')}
-                  className="text-zinc-500 hover:text-violet-400 transition-colors"
-                >
-                  Privacy Policy
-                </button>
-                <span className="text-zinc-700">•</span>
-                <button
-                  onClick={() => setActiveModal('cookies')}
-                  className="text-zinc-500 hover:text-violet-400 transition-colors"
-                >
-                  Cookies
-                </button>
+            <div className="border-t border-white/5">
+              <button
+                onClick={() => setActiveModal('profile')}
+                className="w-full flex items-center gap-3 px-4 py-4 hover:bg-white/5 transition-all"
+              >
+                {user?.avatar ? (
+                  <img
+                    src={user.avatar}
+                    alt={user.name}
+                    className="w-10 h-10 rounded-full flex-shrink-0 border-2 border-violet-500/30"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                    {initials}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0 text-left">
+                  <p className="text-sm text-white font-medium truncate">{user?.name}</p>
+                  <p className="text-[11px] text-zinc-500 truncate">{user?.email}</p>
+                </div>
+              </button>
+
+              <div className="px-4 pb-3">
+                <div className="flex items-center justify-center gap-3 text-[10px]">
+                  <button
+                    onClick={() => setActiveModal('terms')}
+                    className="text-zinc-500 hover:text-violet-400 transition-colors"
+                  >
+                    Terms of Use
+                  </button>
+                  <span className="text-zinc-700">•</span>
+                  <button
+                    onClick={() => setActiveModal('privacy')}
+                    className="text-zinc-500 hover:text-violet-400 transition-colors"
+                  >
+                    Privacy Policy
+                  </button>
+                  <span className="text-zinc-700">•</span>
+                  <button
+                    onClick={() => setActiveModal('cookies')}
+                    className="text-zinc-500 hover:text-violet-400 transition-colors"
+                  >
+                    Cookies
+                  </button>
+                </div>
               </div>
             </div>
           </motion.aside>
@@ -222,7 +255,72 @@ export function Sidebar() {
       )}
 
       <AnimatePresence>
-        {activeModal && (
+        {activeModal === 'profile' && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setActiveModal(null)}
+              className="fixed inset-0 bg-black/80 backdrop-blur-md z-[60]"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] glass-strong border border-white/10 rounded-2xl z-[70] overflow-hidden"
+            >
+              <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
+                <h2 className="text-sm font-semibold text-white">Профиль</h2>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setActiveModal(null)}
+                  className="p-1.5 rounded-md hover:bg-white/10 transition-colors"
+                >
+                  <X className="w-4 h-4 text-zinc-400" />
+                </motion.button>
+              </div>
+
+              <div className="px-5 py-6">
+                <div className="flex items-center gap-4 mb-6">
+                  {user?.avatar ? (
+                    <img
+                      src={user.avatar}
+                      alt={user.name}
+                      className="w-16 h-16 rounded-full border-2 border-violet-500/30 flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-xl font-bold flex-shrink-0">
+                      {initials}
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-base text-white font-semibold truncate">{user?.name}</p>
+                    <p className="text-xs text-zinc-500 truncate">{user?.email}</p>
+                  </div>
+                </div>
+
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    logout();
+                    setActiveModal(null);
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition-all"
+                >
+                  <LogOut className="w-4 h-4 text-red-400" />
+                  <span className="text-sm text-red-400 font-medium">Выйти из аккаунта</span>
+                </motion.button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {activeModal && activeModal !== 'profile' && (
           <>
             <motion.div
               initial={{ opacity: 0 }}
