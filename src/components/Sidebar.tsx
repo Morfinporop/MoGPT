@@ -344,9 +344,9 @@ export function Sidebar() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed inset-6 md:inset-x-[20%] md:inset-y-[10%] lg:inset-x-[28%] lg:inset-y-[8%] bg-zinc-900/95 border border-white/10 rounded-xl z-[70] flex flex-col overflow-hidden max-w-lg mx-auto"
+              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] max-w-[calc(100vw-32px)] max-h-[80vh] glass-strong border border-white/10 rounded-2xl z-[70] flex flex-col overflow-hidden"
             >
-              <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+              <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/5">
                 <h2 className="text-sm font-semibold text-white">
                   {MODAL_CONTENT[activeModal].title}
                 </h2>
@@ -360,7 +360,7 @@ export function Sidebar() {
                 </motion.button>
               </div>
 
-              <div className="flex-1 overflow-y-auto px-4 py-3">
+              <div className="flex-1 overflow-y-auto px-5 py-4">
                 <div className="space-y-3">
                   {MODAL_CONTENT[activeModal].content.split('\n\n').map((block, i) => {
                     const lines = block.trim();
@@ -401,12 +401,12 @@ export function Sidebar() {
                 </div>
               </div>
 
-              <div className="px-4 py-3 border-t border-white/10">
+              <div className="px-5 py-3.5 border-t border-white/5">
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => setActiveModal(null)}
-                  className="w-full py-2 rounded-lg bg-violet-500/20 border border-violet-500/30 text-xs text-violet-300 font-medium hover:bg-violet-500/30 transition-all"
+                  className="w-full py-2.5 rounded-xl bg-violet-500/20 border border-violet-500/30 text-xs text-violet-300 font-medium hover:bg-violet-500/30 transition-all"
                 >
                   Понятно
                 </motion.button>
@@ -434,10 +434,20 @@ function AuthModal({ onClose }: { onClose: () => void }) {
   const [shake, setShake] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState('');
   const [countdown, setCountdown] = useState(0);
+  const [showNameField, setShowNameField] = useState(false);
   const codeInputsRef = useRef<(HTMLInputElement | null)[]>([]);
   const turnstileRef = useRef<any>(null);
 
   const { register, login, sendVerificationCode, verifyCode } = useAuthStore();
+
+  useEffect(() => {
+    if (mode === 'register') {
+      const timer = setTimeout(() => setShowNameField(true), 50);
+      return () => clearTimeout(timer);
+    } else {
+      setShowNameField(false);
+    }
+  }, [mode]);
 
   useEffect(() => {
     if (countdown > 0) {
@@ -451,7 +461,7 @@ function AuthModal({ onClose }: { onClose: () => void }) {
     setTimeout(() => setShake(false), 500);
   };
 
-  const handleSendCode = async () => {
+  const handleSubmit = async () => {
     setError('');
 
     if (!email.trim()) {
@@ -486,6 +496,19 @@ function AuthModal({ onClose }: { onClose: () => void }) {
     }
 
     setIsLoading(true);
+
+    if (mode === 'login') {
+      const loginResult = login(email, password);
+      if (!loginResult.success) {
+        setError(loginResult.error || 'Ошибка входа');
+        triggerShake();
+        setIsLoading(false);
+        return;
+      }
+      setIsLoading(false);
+      onClose();
+      return;
+    }
 
     const result = await sendVerificationCode(email, turnstileToken);
 
@@ -526,22 +549,12 @@ function AuthModal({ onClose }: { onClose: () => void }) {
       return;
     }
 
-    if (mode === 'register') {
-      const regResult = register(name, email, password);
-      if (!regResult.success) {
-        setError(regResult.error || 'Ошибка регистрации');
-        triggerShake();
-        setIsLoading(false);
-        return;
-      }
-    } else {
-      const loginResult = login(email, password);
-      if (!loginResult.success) {
-        setError(loginResult.error || 'Ошибка входа');
-        triggerShake();
-        setIsLoading(false);
-        return;
-      }
+    const regResult = register(name, email, password);
+    if (!regResult.success) {
+      setError(regResult.error || 'Ошибка регистрации');
+      triggerShake();
+      setIsLoading(false);
+      return;
     }
 
     setIsLoading(false);
@@ -639,9 +652,9 @@ function AuthModal({ onClose }: { onClose: () => void }) {
             {step === 'form' && (
               <motion.div
                 key="form"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
               >
                 <div className="flex mx-6 mb-4 rounded-xl glass-light p-1">
@@ -677,6 +690,7 @@ function AuthModal({ onClose }: { onClose: () => void }) {
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.2 }}
                         className="px-3 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20"
                       >
                         <span className="text-xs text-red-300">{error}</span>
@@ -684,29 +698,33 @@ function AuthModal({ onClose }: { onClose: () => void }) {
                     )}
                   </AnimatePresence>
 
-                  <AnimatePresence mode="wait">
-                    {mode === 'register' && (
-                      <motion.input
-                        key="name-input"
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.2 }}
+                  <div className="overflow-hidden">
+                    <motion.div
+                      initial={false}
+                      animate={{
+                        height: showNameField ? 'auto' : 0,
+                        opacity: showNameField ? 1 : 0,
+                        marginBottom: showNameField ? 0 : 0,
+                      }}
+                      transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                    >
+                      <input
                         type="text"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="Имя"
-                        className="w-full px-4 py-3.5 rounded-xl glass-light text-white placeholder-zinc-600 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/30 border border-white/5 focus:border-violet-500/30 transition-all"
+                        tabIndex={showNameField ? 0 : -1}
+                        className="w-full h-[52px] px-4 rounded-2xl glass-light text-white placeholder-zinc-600 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/30 border border-white/5 focus:border-violet-500/30 transition-all mb-3"
                       />
-                    )}
-                  </AnimatePresence>
+                    </motion.div>
+                  </div>
 
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Email"
-                    className="w-full px-4 py-3.5 rounded-xl glass-light text-white placeholder-zinc-600 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/30 border border-white/5 focus:border-violet-500/30 transition-all"
+                    className="w-full h-[52px] px-4 rounded-2xl glass-light text-white placeholder-zinc-600 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/30 border border-white/5 focus:border-violet-500/30 transition-all"
                   />
 
                   <div className="relative">
@@ -715,14 +733,14 @@ function AuthModal({ onClose }: { onClose: () => void }) {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Пароль"
-                      className="w-full px-4 py-3.5 pr-11 rounded-xl glass-light text-white placeholder-zinc-600 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/30 border border-white/5 focus:border-violet-500/30 transition-all"
+                      className="w-full h-[52px] px-4 pr-11 rounded-2xl glass-light text-white placeholder-zinc-600 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/30 border border-white/5 focus:border-violet-500/30 transition-all"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-400 transition-colors"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-400 transition-colors"
                     >
-                      <span className="text-xs">{showPassword ? '🙈' : '👁'}</span>
+                      <span className="text-sm">{showPassword ? '🙈' : '👁'}</span>
                     </button>
                   </div>
 
@@ -745,13 +763,13 @@ function AuthModal({ onClose }: { onClose: () => void }) {
                     disabled={isLoading}
                     whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.99 }}
-                    onClick={handleSendCode}
-                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white font-medium text-sm shadow-xl shadow-violet-500/20 hover:shadow-violet-500/40 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                    onClick={handleSubmit}
+                    className="w-full h-[52px] rounded-2xl bg-gradient-to-r from-violet-500 to-purple-600 text-white font-medium text-sm shadow-xl shadow-violet-500/20 hover:shadow-violet-500/40 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     {isLoading ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
-                      <span>Отправить код на почту</span>
+                      <span>{mode === 'login' ? 'Войти' : 'Отправить код на почту'}</span>
                     )}
                   </motion.button>
                 </div>
@@ -774,6 +792,7 @@ function AuthModal({ onClose }: { onClose: () => void }) {
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
                       className="px-3 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20"
                     >
                       <span className="text-xs text-red-300">{error}</span>
@@ -806,7 +825,7 @@ function AuthModal({ onClose }: { onClose: () => void }) {
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.99 }}
                   onClick={handleVerifyAndComplete}
-                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white font-medium text-sm shadow-xl shadow-violet-500/20 hover:shadow-violet-500/40 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full h-[52px] rounded-2xl bg-gradient-to-r from-violet-500 to-purple-600 text-white font-medium text-sm shadow-xl shadow-violet-500/20 hover:shadow-violet-500/40 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {isLoading ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
