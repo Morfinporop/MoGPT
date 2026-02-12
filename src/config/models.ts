@@ -6,7 +6,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'deepseek/deepseek-chat',
     name: 'MoSeek V3',
-    description: 'Мощная модель',
+    description: 'Мощная модель для всех задач',
     provider: 'MoGPT',
     icon: MODEL_ICON,
     color: 'from-violet-500 to-purple-600',
@@ -18,6 +18,14 @@ export const AI_MODELS: AIModel[] = [
     provider: 'MoGPT',
     icon: MODEL_ICON,
     color: 'from-cyan-500 to-blue-600',
+  },
+  {
+    id: 'google/gemini-2.5-flash',
+    name: 'MoSeek Flash',
+    description: 'Быстрая и точная модель',
+    provider: 'MoGPT',
+    icon: MODEL_ICON,
+    color: 'from-emerald-500 to-teal-600',
   },
 ];
 
