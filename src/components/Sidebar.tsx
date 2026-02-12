@@ -96,13 +96,6 @@ export function Sidebar() {
 
   const [activeModal, setActiveModal] = useState<ModalType>(null);
 
-  const initials = user?.name
-    ?.split(' ')
-    .map(w => w[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2) || '?';
-
   return (
     <AnimatePresence>
       {sidebarOpen && (
@@ -477,6 +470,12 @@ function AuthModal({ onClose }: { onClose: () => void }) {
         triggerShake();
         return;
       }
+    } else {
+      if (!password) {
+        setError('Введи пароль');
+        triggerShake();
+        return;
+      }
     }
 
     if (!turnstileToken) {
@@ -606,7 +605,7 @@ function AuthModal({ onClose }: { onClose: () => void }) {
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] max-w-[calc(100vw-32px)] max-h-[90vh] overflow-y-auto glass-strong border border-white/10 rounded-2xl z-[70] overflow-hidden"
+        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] max-w-[calc(100vw-32px)] max-h-[90vh] overflow-y-auto glass-strong border border-white/10 rounded-2xl z-[70]"
       >
         <motion.div
           animate={shake ? { x: [-8, 8, -8, 8, 0] } : {}}
@@ -721,7 +720,7 @@ function AuthModal({ onClose }: { onClose: () => void }) {
                   </button>
                 </div>
 
-                <div className="flex justify-center pt-2">
+                <div className="flex justify-center pt-2 [&_iframe]:!w-full [&>div]:!w-full">
                   <Turnstile
                     ref={turnstileRef}
                     siteKey={TURNSTILE_SITE_KEY}
@@ -730,7 +729,7 @@ function AuthModal({ onClose }: { onClose: () => void }) {
                     onExpire={() => setTurnstileToken('')}
                     options={{
                       theme: 'dark',
-                      size: 'compact',
+                      size: 'normal',
                     }}
                   />
                 </div>
