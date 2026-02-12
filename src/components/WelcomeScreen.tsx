@@ -18,7 +18,7 @@ export function WelcomeScreen() {
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % GREETING_TEXTS.length);
-    }, 3000);
+    }, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -27,7 +27,7 @@ export function WelcomeScreen() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="flex flex-col items-center justify-center py-24"
+      className="flex flex-col items-center justify-center h-full min-h-[60vh]"
     >
       <AnimatePresence mode="wait">
         <motion.h1
@@ -35,12 +35,10 @@ export function WelcomeScreen() {
           initial={{ opacity: 0, y: 20, filter: 'blur(10px)' }}
           animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
           exit={{ opacity: 0, y: -20, filter: 'blur(10px)' }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
-          className="text-3xl md:text-4xl lg:text-5xl font-bold text-center px-4"
+          transition={{ duration: 0.8, ease: 'easeInOut' }}
+          className="text-3xl md:text-4xl lg:text-5xl font-bold text-center px-4 text-white"
         >
-          <span className="bg-gradient-to-r from-violet-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-            {GREETING_TEXTS[currentIndex]}
-          </span>
+          {GREETING_TEXTS[currentIndex]}
         </motion.h1>
       </AnimatePresence>
     </motion.div>
