@@ -252,21 +252,24 @@ export function ChatInput() {
         </div>
 
         <div className="relative" ref={rudenessRef}>
-          <motion.button
-            type="button"
-            whileHover={{ scale: limitReached ? 1 : 1.02 }}
-            whileTap={{ scale: limitReached ? 1 : 0.98 }}
-            onClick={() => { if (!limitReached) { setShowRudeness(!showRudeness); setShowModes(false); } }}
-            disabled={limitReached}
-            className={`flex items-center justify-center w-[52px] h-[52px] rounded-2xl glass-strong transition-all border border-white/5 ${
-              limitReached ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/10 hover:border-orange-500/30'
-            }`}
-          >
-            <currentRudeness.icon className={`w-5 h-5 ${
-              rudenessMode === 'very_rude' ? 'text-red-400' :
-              rudenessMode === 'rude' ? 'text-orange-400' : 'text-green-400'
-            }`} />
-          </motion.button>
+<motion.button
+  type="submit"
+  disabled={!input.trim() || generating || limitReached || isOverLimit}
+  whileHover={{ scale: 1.05 }}
+  whileTap={{ scale: 0.95 }}
+  className={`flex-shrink-0 w-10 h-10 rounded-xl transition-all duration-200 ml-3 flex items-center justify-center ${
+    input.trim() && !generating && !limitReached && !isOverLimit
+      ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/25'
+      : 'bg-white/5 text-zinc-600 cursor-not-allowed'
+  }`}
+>
+  {limitReached ? (
+    <Lock className="w-5 h-5" />
+  ) : (
+    <Send className={`w-5 h-5 ${generating ? 'animate-pulse' : ''}`} />
+  )}
+</motion.button>
+
 
           <AnimatePresence>
             {showRudeness && (
