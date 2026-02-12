@@ -27,6 +27,7 @@ interface AuthState {
   canSendMessage: () => boolean;
   sendVerificationCode: (email: string, turnstileToken: string) => Promise<{ success: boolean; error?: string }>;
   verifyCode: (email: string, code: string) => Promise<{ success: boolean; error?: string }>;
+  updateAvatar: (avatar: string) => void;
 }
 
 interface StoredUser {
@@ -77,19 +78,11 @@ const isValidEmailDomain = (email: string): boolean => {
   return VALID_EMAIL_DOMAINS.includes(domain);
 };
 
-const getGravatarUrl = (email: string): string => {
-  const hash = simpleHash(email.trim().toLowerCase());
-  return `https://www.gravatar.com/avatar/${hash}?d=identicon&s=128`;
-};
+const DEFAULT_AVATAR = 'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=default&backgroundColor=7c3aed';
 
-const simpleHash = (str: string): string => {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
-  }
-  return Math.abs(hash).toString(16).padStart(32, '0');
+const generateAvatar = (name: string): string => {
+  const seed = encodeURIComponent(name.trim().toLowerCase());
+  return `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${seed}&backgroundColor=7c3aed`;
 };
 
 export const useAuthStore = create<AuthState>()(
@@ -110,6 +103,20 @@ export const useAuthStore = create<AuthState>()(
         set((state) => ({ guestMessages: state.guestMessages + 1 }));
       },
 
+      updateAvatar: (avatar: string) => {
+        set((state) => {
+          if (!state.user) return state;
+          const updated = { ...state.user, avatar };
+          const storedUsers = getStoredUsers();
+          const idx = storedUsers.findIndex(u => u.id === state.user!.id);
+          if (idx !== -1) {
+            storedUsers[idx].avatar = avatar;
+            saveStoredUsers(storedUsers);
+          }
+          return { user: updated };
+        });
+      },
+
       sendVerificationCode: async (email, turnstileToken) => {
         try {
           const res = await fetch(`${API_URL}/api/generate-code`, {
@@ -118,16 +125,12 @@ export const useAuthStore = create<AuthState>()(
             body: JSON.stringify({ email, turnstileToken }),
           });
           const data = await res.json();
-
           if (!res.ok) return { success: false, error: data.error };
 
           await emailjs.send(
             EMAILJS_SERVICE,
             EMAILJS_TEMPLATE,
-            {
-              to_email: email,
-              code: data.code,
-            },
+            { to_email: email, code: data.code },
             EMAILJS_PUBLIC_KEY
           );
 
@@ -185,7 +188,7 @@ export const useAuthStore = create<AuthState>()(
           id: Date.now().toString(36) + Math.random().toString(36).slice(2),
           name: name.trim(),
           email: email.toLowerCase().trim(),
-          avatar: getGravatarUrl(email),
+          avatar: generateAvatar(name),
           password: hashPassword(password),
           createdAt: Date.now(),
         };
