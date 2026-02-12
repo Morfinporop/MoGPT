@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import emailjs from '@emailjs/browser';
 
-const API_URL = 'https://moseek-api-production.up.railway.app';
 const EMAILJS_SERVICE = 'service_jijg2le';
 const EMAILJS_TEMPLATE = 'template_ov1skr7';
 const EMAILJS_PUBLIC_KEY = 't8XHLcCRf_5ITFOHp';
@@ -39,6 +38,13 @@ interface StoredUser {
   createdAt: number;
 }
 
+interface PendingCode {
+  email: string;
+  code: string;
+  expiresAt: number;
+  attempts: number;
+}
+
 const getStoredUsers = (): StoredUser[] => {
   try {
     const data = localStorage.getItem('moseek_users_db');
@@ -50,6 +56,25 @@ const getStoredUsers = (): StoredUser[] => {
 
 const saveStoredUsers = (users: StoredUser[]) => {
   localStorage.setItem('moseek_users_db', JSON.stringify(users));
+};
+
+const getPendingCodes = (): PendingCode[] => {
+  try {
+    const data = sessionStorage.getItem('moseek_pending_codes');
+    return data ? JSON.parse(data) : [];
+  } catch {
+    return [];
+  }
+};
+
+const savePendingCodes = (codes: PendingCode[]) => {
+  sessionStorage.setItem('moseek_pending_codes', JSON.stringify(codes));
+};
+
+const generateCode = (): string => {
+  const array = new Uint32Array(1);
+  crypto.getRandomValues(array);
+  return String(100000 + (array[0] % 900000));
 };
 
 const hashPassword = (password: string): string => {
@@ -77,8 +102,6 @@ const isValidEmailDomain = (email: string): boolean => {
   if (!domain) return false;
   return VALID_EMAIL_DOMAINS.includes(domain);
 };
-
-const DEFAULT_AVATAR = 'https://png.pngtree.com/png-clipart/20240418/original/pngtree-line-art-of-a-neural-network-png-image_14882495.png';
 
 const generateAvatar = (name: string): string => {
   const seed = encodeURIComponent(name.trim().toLowerCase());
@@ -117,42 +140,82 @@ export const useAuthStore = create<AuthState>()(
         });
       },
 
-      sendVerificationCode: async (email, turnstileToken) => {
+      sendVerificationCode: async (email, _turnstileToken) => {
         try {
-          const res = await fetch(`${API_URL}/api/generate-code`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, turnstileToken }),
+          const normalizedEmail = email.toLowerCase().trim();
+
+          const pendingCodes = getPendingCodes();
+          const existing = pendingCodes.find(p => p.email === normalizedEmail);
+          if (existing && existing.expiresAt > Date.now() && existing.attempts >= 5) {
+            return { success: false, error: 'Слишком много попыток. Подожди немного' };
+          }
+
+          const code = generateCode();
+
+          const filtered = pendingCodes.filter(p => p.email !== normalizedEmail);
+          filtered.push({
+            email: normalizedEmail,
+            code,
+            expiresAt: Date.now() + 5 * 60 * 1000,
+            attempts: 0,
           });
-          const data = await res.json();
-          if (!res.ok) return { success: false, error: data.error };
+          savePendingCodes(filtered);
 
           await emailjs.send(
             EMAILJS_SERVICE,
             EMAILJS_TEMPLATE,
-            { to_email: email, code: data.code },
+            {
+              to_email: normalizedEmail,
+              code: code,
+              message: `Ваш код подтверждения MoSeek: ${code}`,
+            },
             EMAILJS_PUBLIC_KEY
           );
 
           return { success: true };
         } catch (error) {
-          console.error('Send code error:', error);
-          return { success: false, error: 'Ошибка отправки кода' };
+          console.error('EmailJS error:', error);
+          return { success: false, error: 'Не удалось отправить код. Проверь email и попробуй снова' };
         }
       },
 
       verifyCode: async (email, code) => {
         try {
-          const res = await fetch(`${API_URL}/api/verify-code`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, code }),
-          });
-          const data = await res.json();
-          if (!res.ok) return { success: false, error: data.error };
+          const normalizedEmail = email.toLowerCase().trim();
+          const pendingCodes = getPendingCodes();
+          const pendingIndex = pendingCodes.findIndex(p => p.email === normalizedEmail);
+
+          if (pendingIndex === -1) {
+            return { success: false, error: 'Код не найден. Запроси новый' };
+          }
+
+          const pending = pendingCodes[pendingIndex];
+
+          if (pending.expiresAt < Date.now()) {
+            pendingCodes.splice(pendingIndex, 1);
+            savePendingCodes(pendingCodes);
+            return { success: false, error: 'Код истёк. Запроси новый' };
+          }
+
+          pending.attempts += 1;
+          savePendingCodes(pendingCodes);
+
+          if (pending.attempts > 5) {
+            pendingCodes.splice(pendingIndex, 1);
+            savePendingCodes(pendingCodes);
+            return { success: false, error: 'Слишком много попыток. Запроси новый код' };
+          }
+
+          if (pending.code !== code.trim()) {
+            return { success: false, error: `Неверный код. Осталось попыток: ${6 - pending.attempts}` };
+          }
+
+          pendingCodes.splice(pendingIndex, 1);
+          savePendingCodes(pendingCodes);
+
           return { success: true };
         } catch {
-          return { success: false, error: 'Ошибка соединения' };
+          return { success: false, error: 'Ошибка проверки кода' };
         }
       },
 
