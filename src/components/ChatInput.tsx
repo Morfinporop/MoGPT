@@ -18,14 +18,14 @@ const RUDENESS_MODES: { id: RudenessMode; label: string; icon: typeof Flame; des
 ];
 
 const UNLIMITED_EMAILS = ['energoferon41@gmail.com'];
-const WORD_LIMIT = 500;
+const CHAR_LIMIT = 300;
 
 export function ChatInput() {
   const [input, setInput] = useState('');
   const [showModes, setShowModes] = useState(false);
   const [showRudeness, setShowRudeness] = useState(false);
   const [showLimitWarning, setShowLimitWarning] = useState(false);
-  const [showWordLimitWarning, setShowWordLimitWarning] = useState(false);
+  const [showCharLimitWarning, setShowCharLimitWarning] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const modesRef = useRef<HTMLDivElement>(null);
   const rudenessRef = useRef<HTMLDivElement>(null);
@@ -49,12 +49,8 @@ export function ChatInput() {
 
   const isUnlimitedUser = user?.email && UNLIMITED_EMAILS.includes(user.email);
 
-  const getWordCount = (text: string) => {
-    return text.trim().split(/\s+/).filter(w => w.length > 0).length;
-  };
-
-  const wordCount = getWordCount(input);
-  const isOverLimit = !isUnlimitedUser && wordCount > WORD_LIMIT;
+  const charCount = input.length;
+  const isOverLimit = !isUnlimitedUser && charCount > CHAR_LIMIT;
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -82,15 +78,15 @@ export function ChatInput() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
-    const words = getWordCount(value);
 
-    if (!isUnlimitedUser && words > WORD_LIMIT) {
-      setShowWordLimitWarning(true);
-      setTimeout(() => setShowWordLimitWarning(false), 3000);
-    } else {
-      setShowWordLimitWarning(false);
+    if (!isUnlimitedUser && value.length > CHAR_LIMIT) {
+      setShowCharLimitWarning(true);
+      setTimeout(() => setShowCharLimitWarning(false), 3000);
+      setInput(value.slice(0, CHAR_LIMIT));
+      return;
     }
 
+    setShowCharLimitWarning(false);
     setInput(value);
   };
 
@@ -187,7 +183,7 @@ export function ChatInput() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {showWordLimitWarning && isOverLimit && (
+        {showCharLimitWarning && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -196,7 +192,7 @@ export function ChatInput() {
           >
             <Lock className="w-4 h-4 text-red-400 flex-shrink-0" />
             <p className="text-sm text-red-300">
-              Превышен лимит в {WORD_LIMIT} слов. Сейчас: {wordCount} слов.
+              Лимит {CHAR_LIMIT} символов достигнут.
             </p>
           </motion.div>
         )}
@@ -338,6 +334,7 @@ export function ChatInput() {
                 onKeyDown={handleKeyDown}
                 placeholder={limitReached ? 'Зарегистрируйся для продолжения...' : 'Напиши что-нибудь...'}
                 disabled={generating || limitReached}
+                maxLength={isUnlimitedUser ? undefined : CHAR_LIMIT}
                 rows={1}
                 className="w-full bg-transparent text-white placeholder-zinc-600 resize-none text-[15px] leading-9 max-h-[160px] focus:outline-none"
                 style={{
@@ -350,11 +347,11 @@ export function ChatInput() {
               />
             </div>
 
-            {!isUnlimitedUser && input.trim().length > 0 && (
+            {!isUnlimitedUser && input.length > 0 && (
               <span className={`text-[11px] mr-2 flex-shrink-0 ${
-                isOverLimit ? 'text-red-400' : wordCount > WORD_LIMIT * 0.8 ? 'text-orange-400' : 'text-zinc-600'
+                charCount >= CHAR_LIMIT ? 'text-red-400' : charCount > CHAR_LIMIT * 0.8 ? 'text-orange-400' : 'text-zinc-600'
               }`}>
-                {wordCount}/{WORD_LIMIT}
+                {charCount}/{CHAR_LIMIT}
               </span>
             )}
 
