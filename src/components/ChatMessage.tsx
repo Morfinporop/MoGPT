@@ -3,7 +3,8 @@ import { Copy, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
 import { marked } from 'marked';
 import type { Message } from '../types';
-import { MODEL_ICON } from '../config/models';
+import { AI_MODELS, MODEL_ICON } from '../config/models';
+import { useChatStore } from '../store/chatStore';
 
 interface ChatMessageProps {
   message: Message;
@@ -21,6 +22,9 @@ export function ChatMessage({ message }: ChatMessageProps) {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
   const isAssistant = message.role === 'assistant';
+  const { selectedModel } = useChatStore();
+
+  const currentModel = AI_MODELS.find(m => m.id === selectedModel) || AI_MODELS[0];
 
   const isLong = message.content.length > MAX_LENGTH && !message.isLoading;
   const displayContent = isLong && !expanded ? message.content.slice(0, MAX_LENGTH) + '...' : message.content;
@@ -145,14 +149,14 @@ export function ChatMessage({ message }: ChatMessageProps) {
         whileHover={{ scale: 1.1 }}
         className={`flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center overflow-hidden ${
           isAssistant
-            ? 'bg-gradient-to-br from-violet-500 via-purple-500 to-pink-500 glow-soft'
+            ? `bg-gradient-to-br ${currentModel.color} glow-soft`
             : 'bg-gradient-to-br from-emerald-500 to-teal-500'
         }`}
       >
         {isAssistant ? (
           <img
-            src={MODEL_ICON}
-            alt="MoGPT"
+            src={currentModel.icon}
+            alt={currentModel.name}
             className="w-5 h-5 object-contain filter brightness-0 invert"
           />
         ) : (
@@ -165,6 +169,12 @@ export function ChatMessage({ message }: ChatMessageProps) {
       </motion.div>
 
       <div className="group relative max-w-[85%] min-w-0 overflow-hidden">
+        {isAssistant && message.model && (
+          <div className="flex items-center gap-1.5 mb-1 px-1">
+            <span className="text-[10px] text-zinc-600 font-medium">{message.model}</span>
+          </div>
+        )}
+
         <motion.div
           whileHover={{ scale: 1.005 }}
           className={`relative px-4 py-3 rounded-2xl overflow-hidden ${
