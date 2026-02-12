@@ -81,7 +81,7 @@ export function AuthScreen() {
                 className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-violet-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-2xl shadow-violet-500/30 glow-soft overflow-hidden"
               >
                 <img
-                  src="https://img.icons8.com/fluency/96/artificial-intelligence.png"
+                  src="https://icons8.ru/icon/62903/artificial-intelligence-brain"
                   alt="AI"
                   className="w-12 h-12 object-contain"
                 />
