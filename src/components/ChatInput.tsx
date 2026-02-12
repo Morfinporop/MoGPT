@@ -45,9 +45,11 @@ export function ChatInput() {
 
   useEffect(() => {
     if (textareaRef.current) {
-      textareaRef.current.style.height = '52px';
+      textareaRef.current.style.height = '36px';
       if (textareaRef.current.scrollHeight > 52) {
         textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 160)}px`;
+      } else {
+        textareaRef.current.style.height = '36px';
       }
     }
   }, [input]);
@@ -79,7 +81,7 @@ export function ChatInput() {
 
     setInput('');
     if (textareaRef.current) {
-      textareaRef.current.style.height = '52px';
+      textareaRef.current.style.height = '36px';
     }
 
     if (!isAuthenticated) {
@@ -188,10 +190,7 @@ export function ChatInput() {
                   <button
                     key={mode.id}
                     type="button"
-                    onClick={() => {
-                      setResponseMode(mode.id);
-                      setShowModes(false);
-                    }}
+                    onClick={() => { setResponseMode(mode.id); setShowModes(false); }}
                     className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/5 transition-all ${
                       responseMode === mode.id ? 'bg-violet-500/10' : ''
                     }`}
@@ -202,14 +201,10 @@ export function ChatInput() {
                       <mode.icon className={`w-4 h-4 ${responseMode === mode.id ? 'text-violet-400' : 'text-zinc-500'}`} />
                     </div>
                     <div className="flex-1">
-                      <p className={`text-sm ${responseMode === mode.id ? 'text-white' : 'text-zinc-400'}`}>
-                        {mode.label}
-                      </p>
+                      <p className={`text-sm ${responseMode === mode.id ? 'text-white' : 'text-zinc-400'}`}>{mode.label}</p>
                       <p className="text-[10px] text-zinc-600">{mode.desc}</p>
                     </div>
-                    {responseMode === mode.id && (
-                      <div className="w-2 h-2 rounded-full bg-violet-500" />
-                    )}
+                    {responseMode === mode.id && <div className="w-2 h-2 rounded-full bg-violet-500" />}
                   </button>
                 ))}
               </motion.div>
@@ -250,10 +245,7 @@ export function ChatInput() {
                   <button
                     key={mode.id}
                     type="button"
-                    onClick={() => {
-                      setRudenessMode(mode.id);
-                      setShowRudeness(false);
-                    }}
+                    onClick={() => { setRudenessMode(mode.id); setShowRudeness(false); }}
                     className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/5 transition-all ${
                       rudenessMode === mode.id ? 'bg-orange-500/10' : ''
                     }`}
@@ -272,9 +264,7 @@ export function ChatInput() {
                       }`} />
                     </div>
                     <div className="flex-1">
-                      <p className={`text-sm ${rudenessMode === mode.id ? 'text-white' : 'text-zinc-400'}`}>
-                        {mode.label}
-                      </p>
+                      <p className={`text-sm ${rudenessMode === mode.id ? 'text-white' : 'text-zinc-400'}`}>{mode.label}</p>
                       <p className="text-[10px] text-zinc-600">{mode.desc}</p>
                     </div>
                     {rudenessMode === mode.id && (
@@ -297,7 +287,7 @@ export function ChatInput() {
           }`}
         >
           <div className="relative flex items-center min-h-[52px] px-4">
-            <div className="flex-1">
+            <div className="flex-1 flex items-center">
               <textarea
                 ref={textareaRef}
                 value={input}
@@ -306,13 +296,13 @@ export function ChatInput() {
                 placeholder={limitReached ? 'Зарегистрируйся для продолжения...' : 'Напиши что-нибудь...'}
                 disabled={generating || limitReached}
                 rows={1}
-                className="w-full bg-transparent text-white placeholder-zinc-600 resize-none text-[15px] leading-relaxed max-h-[160px] focus:outline-none py-[14px]"
+                className="w-full bg-transparent text-white placeholder-zinc-600 resize-none text-[15px] leading-9 max-h-[160px] focus:outline-none"
                 style={{
                   outline: 'none',
                   border: 'none',
                   boxShadow: 'none',
-                  height: '52px',
-                  minHeight: '52px',
+                  height: '36px',
+                  minHeight: '36px',
                 }}
               />
             </div>
@@ -322,7 +312,7 @@ export function ChatInput() {
               disabled={!input.trim() || generating || limitReached}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className={`flex-shrink-0 p-2.5 rounded-xl transition-all duration-200 ml-2 ${
+              className={`flex-shrink-0 w-10 h-10 rounded-xl transition-all duration-200 ml-2 flex items-center justify-center ${
                 input.trim() && !generating && !limitReached
                   ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/25'
                   : 'bg-white/5 text-zinc-600 cursor-not-allowed'
