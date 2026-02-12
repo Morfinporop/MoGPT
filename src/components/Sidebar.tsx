@@ -8,181 +8,92 @@ type ModalType = 'terms' | 'privacy' | 'cookies' | null;
 const MODAL_CONTENT = {
   terms: {
     title: 'Условия использования',
-    content: `
-# Условия использования MoSeek
+    content: `Последнее обновление: Январь 2026
 
-**Последнее обновление: Январь 2026**
+Принятие условий
+Используя MoSeek, вы принимаете данные условия. Если не согласны — прекратите использование сервиса.
 
-## 1. Принятие условий
+Описание сервиса
+MoSeek — AI-ассистент нового поколения. Генерация текста, кода, ответы на вопросы, помощь в решении задач.
 
-Используя MoSeek, вы соглашаетесь с настоящими условиями. Если вы не согласны — не используйте сервис.
+Правила использования
+Запрещено: создание вредоносного контента, нарушение законов, спам, попытки взлома.
 
-## 2. Описание сервиса
+Интеллектуальная собственность
+Сгенерированный контент можно использовать свободно. Уникальность не гарантируется.
 
-MoSeek — это AI-ассистент нового поколения, предоставляющий:
-- Генерацию текста и кода
-- Ответы на вопросы
-- Помощь в решении задач
+Ответственность
+Сервис предоставляется «как есть». Мы не несём ответственности за неточности, перебои и любой ущерб.
 
-## 3. Правила использования
+Изменения
+Условия могут меняться. Продолжение использования означает согласие.
 
-Запрещено использовать сервис для:
-- Создания вредоносного контента
-- Нарушения законодательства
-- Спама и автоматизированных запросов
-- Попыток взлома системы
-
-## 4. Интеллектуальная собственность
-
-Контент, созданный AI, может использоваться вами свободно. Однако мы не гарантируем его уникальность.
-
-## 5. Ограничение ответственности
-
-MoSeek предоставляется "как есть". Мы не несём ответственности за:
-- Неточности в ответах
-- Перебои в работе
-- Любой ущерб от использования
-
-## 6. Изменения условий
-
-Мы можем изменять условия в любое время. Продолжение использования означает согласие с изменениями.
-
----
-
-© 2026 MoSeek. Все права защищены.
-    `
+© 2026 MoSeek`
   },
   privacy: {
-    title: 'Политика конфиденциальности',
-    content: `
-# Политика конфиденциальности MoSeek
+    title: 'Конфиденциальность',
+    content: `Последнее обновление: Январь 2026
 
-**Последнее обновление: Январь 2026**
+Сбор данных
+Автоматически: история сообщений (локально в браузере), тип устройства. От вас: текст запросов.
 
-## 1. Какие данные мы собираем
+Использование
+Данные нужны для ответов на запросы и улучшения сервиса.
 
-### Автоматически собираемые данные:
-- История сообщений (хранится локально в браузере)
-- Технические данные (тип браузера, устройство)
+Хранение
+Сообщения хранятся локально в вашем браузере. На серверах переписка не сохраняется. Удалить можно в любой момент.
 
-### Данные, которые вы предоставляете:
-- Текст ваших запросов
-- Загруженные файлы (если применимо)
+Третьи лица
+Данные не продаются. Запросы обрабатываются через API партнёров.
 
-## 2. Как мы используем данные
+Безопасность
+HTTPS-шифрование, обфускация данных, регулярные проверки.
 
-Ваши данные используются для:
-- Предоставления ответов на запросы
-- Улучшения качества сервиса
-- Технической поддержки
+Ваши права
+Удаление данных, запрос копии, отказ от сервиса.
 
-## 3. Хранение данных
-
-- Сообщения хранятся **локально** в вашем браузере
-- Мы **не храним** вашу переписку на серверах
-- Вы можете удалить все данные в любой момент
-
-## 4. Передача данных третьим лицам
-
-Мы **не продаём** ваши данные. Запросы обрабатываются через API партнёров с соблюдением их политик конфиденциальности.
-
-## 5. Безопасность
-
-Мы применяем современные методы защиты:
-- Шифрование соединения (HTTPS)
-- Обфускация чувствительных данных
-- Регулярные проверки безопасности
-
-## 6. Ваши права
-
-Вы имеете право:
-- Удалить свои данные
-- Запросить копию данных
-- Отказаться от использования сервиса
-
-## 7. Контакты
-
-По вопросам конфиденциальности: privacy@mogpt.ai
-
----
-
-© 2026 MoGPT. Все права защищены.
-    `
+© 2026 MoSeek`
   },
   cookies: {
     title: 'Политика Cookie',
-    content: `
-# Политика использования Cookie
+    content: `Последнее обновление: Январь 2026
 
-**Последнее обновление: Январь 2026**
+Что такое Cookie
+Небольшие файлы в браузере для сохранения настроек.
 
-## Что такое Cookie?
+Используем
+Хранение настроек, история чатов (локально), выбранный режим, тема оформления.
 
-Cookie — это небольшие текстовые файлы, которые сохраняются в вашем браузере при посещении сайта.
+Не используем
+Рекламные, трекинговые Cookie, Cookie третьих лиц, профилирование.
 
-## Какие Cookie мы используем
+LocalStorage
+История сообщений, настройки интерфейса, кэш — всё только на вашем устройстве.
 
-### Необходимые Cookie
-- **Хранение настроек** — запоминаем ваши предпочтения
-- **История чатов** — сохраняем переписку локально
-- **Выбранный режим** — код, визуал, обычный
+Управление
+Очистка в настройках браузера, блокировка, удаление истории через кнопку очистки.
 
-### Функциональные Cookie
-- **Тема оформления** — тёмная тема
-- **Языковые настройки** — русский язык
-
-## Мы НЕ используем
-
-❌ Рекламные Cookie
-❌ Трекинговые Cookie
-❌ Cookie третьих лиц для аналитики
-❌ Cookie для профилирования
-
-## Управление Cookie
-
-Вы можете:
-- **Очистить Cookie** в настройках браузера
-- **Заблокировать Cookie** (сайт продолжит работать)
-- **Удалить историю** через кнопку очистки чата
-
-## Локальное хранилище (LocalStorage)
-
-Помимо Cookie, мы используем LocalStorage для:
-- Сохранения истории сообщений
-- Хранения настроек интерфейса
-- Кэширования данных для быстрой загрузки
-
-Все данные хранятся **только на вашем устройстве**.
-
-## Согласие
-
-Продолжая использовать MoGPT, вы соглашаетесь с нашей политикой Cookie.
-
----
-
-© 2026 MoGPT. Все права защищены.
-    `
+© 2026 MoSeek`
   }
 };
 
 export function Sidebar() {
-  const { 
-    chats, 
-    currentChatId, 
-    sidebarOpen, 
-    toggleSidebar, 
-    setCurrentChat, 
+  const {
+    chats,
+    currentChatId,
+    sidebarOpen,
+    toggleSidebar,
+    setCurrentChat,
     deleteChat,
     createNewChat,
   } = useChatStore();
-  
+
   const [activeModal, setActiveModal] = useState<ModalType>(null);
 
   return (
     <AnimatePresence>
       {sidebarOpen && (
         <>
-          {/* Overlay */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -192,29 +103,26 @@ export function Sidebar() {
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
           />
 
-          {/* Sidebar */}
           <motion.aside
-            initial={{ x: -320, opacity: 0 }}
+            initial={{ x: -280, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
-            exit={{ x: -320, opacity: 0 }}
+            exit={{ x: -280, opacity: 0 }}
             transition={{ type: 'spring', damping: 35, stiffness: 500 }}
-            className="fixed left-0 top-0 bottom-0 w-72 glass-strong border-r border-white/5 z-50 flex flex-col"
+            className="fixed left-0 top-0 bottom-0 w-64 glass-strong border-r border-white/5 z-50 flex flex-col"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-white/5">
-              <h2 className="text-lg font-semibold text-white">Чаты</h2>
+            <div className="flex items-center justify-between px-3 py-3 border-b border-white/5">
+              <h2 className="text-sm font-semibold text-white">Чаты</h2>
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={toggleSidebar}
-                className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+                className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
               >
-                <X className="w-5 h-5 text-zinc-400" />
+                <X className="w-4 h-4 text-zinc-400" />
               </motion.button>
             </div>
 
-            {/* New Chat Button */}
-            <div className="p-3">
+            <div className="px-2 py-2">
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -222,30 +130,29 @@ export function Sidebar() {
                   createNewChat();
                   toggleSidebar();
                 }}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-violet-500/20 to-purple-500/20 border border-violet-500/30 hover:border-violet-500/50 transition-all"
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-500/15 border border-violet-500/25 hover:border-violet-500/40 transition-all"
               >
-                <Plus className="w-5 h-5 text-violet-400" />
-                <span className="text-sm text-violet-300">Новый чат</span>
+                <Plus className="w-4 h-4 text-violet-400" />
+                <span className="text-xs text-violet-300">Новый чат</span>
               </motion.button>
             </div>
 
-            {/* Chat List */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-1">
+            <div className="flex-1 overflow-y-auto px-2 py-1 space-y-0.5">
               {chats.length === 0 ? (
-                <div className="text-center py-8">
-                  <MessageSquare className="w-12 h-12 text-zinc-700 mx-auto mb-3" />
-                  <p className="text-sm text-zinc-600">Нет чатов</p>
-                  <p className="text-xs text-zinc-700 mt-1">Начни новый диалог</p>
+                <div className="text-center py-6">
+                  <MessageSquare className="w-8 h-8 text-zinc-700 mx-auto mb-2" />
+                  <p className="text-xs text-zinc-600">Нет чатов</p>
+                  <p className="text-[10px] text-zinc-700 mt-0.5">Начни новый диалог</p>
                 </div>
               ) : (
                 chats.map((chat) => (
                   <motion.div
                     key={chat.id}
-                    initial={{ opacity: 0, x: -20 }}
+                    initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className={`group relative rounded-xl transition-all cursor-pointer ${
-                      currentChatId === chat.id 
-                        ? 'bg-violet-500/15 border border-violet-500/30' 
+                    className={`group relative rounded-lg transition-all cursor-pointer ${
+                      currentChatId === chat.id
+                        ? 'bg-violet-500/15 border border-violet-500/25'
                         : 'hover:bg-white/5 border border-transparent'
                     }`}
                   >
@@ -255,13 +162,13 @@ export function Sidebar() {
                           setCurrentChat(chat.id);
                           toggleSidebar();
                         }}
-                        className="flex-1 min-w-0 text-left px-3 py-2.5"
+                        className="flex-1 min-w-0 text-left px-2.5 py-2"
                       >
                         <div className="flex items-center gap-2">
-                          <MessageSquare className={`w-4 h-4 flex-shrink-0 ${
+                          <MessageSquare className={`w-3.5 h-3.5 flex-shrink-0 ${
                             currentChatId === chat.id ? 'text-violet-400' : 'text-zinc-600'
                           }`} />
-                          <p className={`text-sm truncate max-w-[140px] ${
+                          <p className={`text-xs truncate max-w-[150px] ${
                             currentChatId === chat.id ? 'text-white' : 'text-zinc-400'
                           }`}>
                             {chat.title}
@@ -269,7 +176,6 @@ export function Sidebar() {
                         </div>
                       </button>
 
-                      {/* Delete Button */}
                       <motion.button
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
@@ -277,9 +183,9 @@ export function Sidebar() {
                           e.stopPropagation();
                           deleteChat(chat.id);
                         }}
-                        className="flex-shrink-0 p-2 mr-1 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-500/20 transition-all"
+                        className="flex-shrink-0 p-1.5 mr-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-red-500/20 transition-all"
                       >
-                        <X className="w-4 h-4 text-red-400" />
+                        <X className="w-3 h-3 text-red-400" />
                       </motion.button>
                     </div>
                   </motion.div>
@@ -287,26 +193,25 @@ export function Sidebar() {
               )}
             </div>
 
-            {/* Footer with Links */}
-            <div className="p-4 border-t border-white/5">
-              <div className="flex items-center justify-center gap-3 text-[10px]">
-                <button 
+            <div className="px-3 py-2.5 border-t border-white/5">
+              <div className="flex items-center justify-center gap-2 text-[9px]">
+                <button
                   onClick={() => setActiveModal('terms')}
-                  className="text-zinc-500 hover:text-violet-400 transition-colors"
+                  className="text-zinc-600 hover:text-violet-400 transition-colors"
                 >
-                  Terms of Use
+                  Terms
                 </button>
-                <span className="text-zinc-700">•</span>
-                <button 
+                <span className="text-zinc-700">·</span>
+                <button
                   onClick={() => setActiveModal('privacy')}
-                  className="text-zinc-500 hover:text-violet-400 transition-colors"
+                  className="text-zinc-600 hover:text-violet-400 transition-colors"
                 >
-                  Privacy Policy
+                  Privacy
                 </button>
-                <span className="text-zinc-700">•</span>
-                <button 
+                <span className="text-zinc-700">·</span>
+                <button
                   onClick={() => setActiveModal('cookies')}
-                  className="text-zinc-500 hover:text-violet-400 transition-colors"
+                  className="text-zinc-600 hover:text-violet-400 transition-colors"
                 >
                   Cookies
                 </button>
@@ -316,7 +221,6 @@ export function Sidebar() {
         </>
       )}
 
-      {/* Modal for Terms/Privacy/Cookies */}
       <AnimatePresence>
         {activeModal && (
           <>
@@ -328,66 +232,72 @@ export function Sidebar() {
               className="fixed inset-0 bg-black/80 backdrop-blur-md z-[60]"
             />
             <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="fixed inset-4 md:inset-12 lg:inset-24 bg-zinc-900/95 border border-white/10 rounded-2xl z-[70] flex flex-col overflow-hidden"
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="fixed inset-6 md:inset-x-[20%] md:inset-y-[10%] lg:inset-x-[28%] lg:inset-y-[8%] bg-zinc-900/95 border border-white/10 rounded-xl z-[70] flex flex-col overflow-hidden max-w-lg mx-auto"
             >
-              {/* Modal Header */}
-              <div className="flex items-center justify-between p-4 md:p-6 border-b border-white/10">
-                <h2 className="text-xl md:text-2xl font-bold text-white">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+                <h2 className="text-sm font-semibold text-white">
                   {MODAL_CONTENT[activeModal].title}
                 </h2>
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => setActiveModal(null)}
-                  className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+                  className="p-1.5 rounded-md hover:bg-white/10 transition-colors"
                 >
-                  <X className="w-6 h-6 text-zinc-400" />
+                  <X className="w-4 h-4 text-zinc-400" />
                 </motion.button>
               </div>
 
-              {/* Modal Content */}
-              <div className="flex-1 overflow-y-auto p-4 md:p-6">
-                <div className="prose prose-invert prose-violet max-w-none">
-                  {MODAL_CONTENT[activeModal].content.split('\n').map((line, i) => {
-                    if (line.startsWith('# ')) {
-                      return <h1 key={i} className="text-2xl md:text-3xl font-bold text-white mb-4">{line.slice(2)}</h1>;
+              <div className="flex-1 overflow-y-auto px-4 py-3">
+                <div className="space-y-3">
+                  {MODAL_CONTENT[activeModal].content.split('\n\n').map((block, i) => {
+                    const lines = block.trim();
+                    if (!lines) return null;
+
+                    if (lines.startsWith('©')) {
+                      return (
+                        <p key={i} className="text-[10px] text-zinc-600 pt-2 border-t border-white/5">
+                          {lines}
+                        </p>
+                      );
                     }
-                    if (line.startsWith('## ')) {
-                      return <h2 key={i} className="text-xl md:text-2xl font-semibold text-violet-400 mt-6 mb-3">{line.slice(3)}</h2>;
+
+                    if (lines.startsWith('Последнее')) {
+                      return (
+                        <p key={i} className="text-[10px] text-zinc-500 italic">
+                          {lines}
+                        </p>
+                      );
                     }
-                    if (line.startsWith('### ')) {
-                      return <h3 key={i} className="text-lg font-semibold text-purple-400 mt-4 mb-2">{line.slice(4)}</h3>;
+
+                    const firstLine = lines.split('\n')[0];
+                    const rest = lines.split('\n').slice(1).join(' ');
+
+                    if (rest) {
+                      return (
+                        <div key={i}>
+                          <h3 className="text-xs font-semibold text-violet-400 mb-1">{firstLine}</h3>
+                          <p className="text-[11px] text-zinc-400 leading-relaxed">{rest}</p>
+                        </div>
+                      );
                     }
-                    if (line.startsWith('**') && line.endsWith('**')) {
-                      return <p key={i} className="text-white font-semibold my-2">{line.slice(2, -2)}</p>;
-                    }
-                    if (line.startsWith('- ')) {
-                      return <li key={i} className="text-zinc-300 ml-4 my-1">{line.slice(2)}</li>;
-                    }
-                    if (line.startsWith('❌')) {
-                      return <p key={i} className="text-red-400 my-1">{line}</p>;
-                    }
-                    if (line.startsWith('---')) {
-                      return <hr key={i} className="border-white/10 my-6" />;
-                    }
-                    if (line.trim() === '') {
-                      return <br key={i} />;
-                    }
-                    return <p key={i} className="text-zinc-400 my-2">{line}</p>;
+
+                    return (
+                      <p key={i} className="text-[11px] text-zinc-400 leading-relaxed">{lines}</p>
+                    );
                   })}
                 </div>
               </div>
 
-              {/* Modal Footer */}
-              <div className="p-4 md:p-6 border-t border-white/10">
+              <div className="px-4 py-3 border-t border-white/10">
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => setActiveModal(null)}
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-500 to-purple-500 text-white font-medium hover:from-violet-600 hover:to-purple-600 transition-all"
+                  className="w-full py-2 rounded-lg bg-violet-500/20 border border-violet-500/30 text-xs text-violet-300 font-medium hover:bg-violet-500/30 transition-all"
                 >
                   Понятно
                 </motion.button>
