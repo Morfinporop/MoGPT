@@ -4,13 +4,6 @@ import { Send, Code, Sparkles, MessageCircle, Flame, Smile, Angry } from 'lucide
 import { useChatStore, type ResponseMode, type RudenessMode } from '../store/chatStore';
 import { aiService } from '../services/aiService';
 
-const SUGGESTIONS = [
-  { text: 'Расскажи о себе', icon: 'https://cdn-icons-png.flaticon.com/512/4712/4712035.png' },
-  { text: 'Напиши код на Python', icon: 'https://cdn-icons-png.flaticon.com/512/5968/5968350.png' },
-  { text: 'Объясни машинное обучение', icon: 'https://cdn-icons-png.flaticon.com/512/8618/8618881.png' },
-  { text: 'Помоги с задачей', icon: 'https://cdn-icons-png.flaticon.com/512/3176/3176366.png' },
-];
-
 const MODES: { id: ResponseMode; label: string; icon: typeof Code; desc: string }[] = [
   { id: 'normal', label: 'Обычный', icon: MessageCircle, desc: 'Код и общение' },
   { id: 'code', label: 'Код', icon: Code, desc: 'Только чистый код' },
@@ -30,11 +23,11 @@ export function ChatInput() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const modesRef = useRef<HTMLDivElement>(null);
   const rudenessRef = useRef<HTMLDivElement>(null);
-  
-  const { 
-    addMessage, 
-    updateMessage, 
-    isGenerating, 
+
+  const {
+    addMessage,
+    updateMessage,
+    isGenerating,
     setGenerating,
     getCurrentMessages,
     responseMode,
@@ -65,7 +58,7 @@ export function ChatInput() {
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    
+
     const trimmedInput = input.trim();
     if (!trimmedInput || isGenerating) return;
 
@@ -73,17 +66,17 @@ export function ChatInput() {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
     }
-    
+
     setGenerating(true);
 
-    addMessage({ 
-      role: 'user', 
+    addMessage({
+      role: 'user',
       content: trimmedInput,
     });
 
-    const assistantId = addMessage({ 
-      role: 'assistant', 
-      content: '', 
+    const assistantId = addMessage({
+      role: 'assistant',
+      content: '',
       isLoading: true,
       model: 'MoSeek V3',
       thinking: 'Печатаю...',
@@ -91,22 +84,20 @@ export function ChatInput() {
 
     try {
       const allMessages = [...getCurrentMessages()];
-
       const response = await aiService.generateResponse(allMessages, responseMode, rudenessMode);
-      
+
       updateMessage(assistantId, '', 'Печатаю...');
-      
+
       let currentContent = '';
       const words = response.content.split(' ');
-      
+
       for (let i = 0; i < words.length; i++) {
         currentContent += (i > 0 ? ' ' : '') + words[i];
         updateMessage(assistantId, currentContent, 'Печатаю...');
         await new Promise(resolve => setTimeout(resolve, 10));
       }
-      
+
       updateMessage(assistantId, currentContent, '');
-      
     } catch (error) {
       console.error('Error:', error);
       updateMessage(assistantId, 'Бля, что-то пошло не так. Попробуй ещё раз.', '');
@@ -122,54 +113,12 @@ export function ChatInput() {
     }
   };
 
-  const handleSuggestionClick = (text: string) => {
-    setInput(text);
-    textareaRef.current?.focus();
-  };
-
   const currentMode = MODES.find(m => m.id === responseMode) || MODES[0];
   const currentRudeness = RUDENESS_MODES.find(m => m.id === rudenessMode) || RUDENESS_MODES[1];
-  const messages = getCurrentMessages();
 
   return (
     <div className="w-full max-w-3xl mx-auto px-4">
-      {/* Suggestions */}
-      <AnimatePresence>
-        {messages.length === 0 && !input && (
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 8 }}
-            className="grid grid-cols-2 gap-2 mb-4"
-          >
-            {SUGGESTIONS.map((suggestion, i) => (
-              <motion.button
-                key={suggestion.text}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: i * 0.05 }}
-                whileHover={{ scale: 1.02, y: -2 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => handleSuggestionClick(suggestion.text)}
-                className="glass-light rounded-xl px-4 py-3 text-left hover:border-violet-500/30 transition-all group flex items-center gap-3"
-              >
-                <img 
-                  src={suggestion.icon} 
-                  alt="" 
-                  className="w-5 h-5 object-contain opacity-70 group-hover:opacity-100 transition-opacity"
-                />
-                <span className="text-sm text-zinc-400 group-hover:text-zinc-300 transition-colors">
-                  {suggestion.text}
-                </span>
-              </motion.button>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Input Area with Mode Selectors */}
       <div className="flex items-end gap-2">
-        {/* Response Mode Selector */}
         <div className="relative" ref={modesRef}>
           <motion.button
             type="button"
@@ -181,7 +130,6 @@ export function ChatInput() {
             <currentMode.icon className="w-5 h-5 text-violet-400" />
           </motion.button>
 
-          {/* Mode Dropdown */}
           <AnimatePresence>
             {showModes && (
               <motion.div
@@ -227,7 +175,6 @@ export function ChatInput() {
           </AnimatePresence>
         </div>
 
-        {/* Rudeness Mode Selector */}
         <div className="relative" ref={rudenessRef}>
           <motion.button
             type="button"
@@ -237,12 +184,11 @@ export function ChatInput() {
             className="flex items-center justify-center w-[52px] h-[52px] rounded-2xl glass-strong hover:bg-white/10 transition-all border border-white/5 hover:border-orange-500/30"
           >
             <currentRudeness.icon className={`w-5 h-5 ${
-              rudenessMode === 'very_rude' ? 'text-red-400' : 
+              rudenessMode === 'very_rude' ? 'text-red-400' :
               rudenessMode === 'rude' ? 'text-orange-400' : 'text-green-400'
             }`} />
           </motion.button>
 
-          {/* Rudeness Dropdown */}
           <AnimatePresence>
             {showRudeness && (
               <motion.div
@@ -268,13 +214,13 @@ export function ChatInput() {
                     }`}
                   >
                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                      rudenessMode === mode.id ? 
+                      rudenessMode === mode.id ?
                         mode.id === 'very_rude' ? 'bg-red-500/20' :
                         mode.id === 'rude' ? 'bg-orange-500/20' : 'bg-green-500/20'
                       : 'bg-white/5'
                     }`}>
                       <mode.icon className={`w-4 h-4 ${
-                        rudenessMode === mode.id ? 
+                        rudenessMode === mode.id ?
                           mode.id === 'very_rude' ? 'text-red-400' :
                           mode.id === 'rude' ? 'text-orange-400' : 'text-green-400'
                         : 'text-zinc-500'
@@ -299,7 +245,6 @@ export function ChatInput() {
           </AnimatePresence>
         </div>
 
-        {/* Input Form */}
         <form
           onSubmit={handleSubmit}
           className="flex-1 relative rounded-2xl overflow-hidden glass-strong shadow-lg shadow-violet-500/5 border border-white/5"
@@ -315,9 +260,9 @@ export function ChatInput() {
                 disabled={isGenerating}
                 rows={1}
                 className="w-full bg-transparent text-white placeholder-zinc-600 resize-none text-[15px] leading-relaxed py-1 max-h-[160px] focus:outline-none"
-                style={{ 
-                  outline: 'none', 
-                  border: 'none', 
+                style={{
+                  outline: 'none',
+                  border: 'none',
                   boxShadow: 'none',
                 }}
               />
@@ -340,7 +285,6 @@ export function ChatInput() {
         </form>
       </div>
 
-      {/* Footer */}
       <p className="text-center text-[11px] text-zinc-600 mt-3">
         MoGPT может ошибаться
       </p>
