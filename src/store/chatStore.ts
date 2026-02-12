@@ -8,9 +8,11 @@ export type RudenessMode = 'very_rude' | 'rude' | 'polite';
 interface ExtendedChatState extends ChatState {
   responseMode: ResponseMode;
   rudenessMode: RudenessMode;
+  selectedModel: string;
   generatingChatIds: Set<string>;
   setResponseMode: (mode: ResponseMode) => void;
   setRudenessMode: (mode: RudenessMode) => void;
+  setSelectedModel: (modelId: string) => void;
   setGeneratingChat: (chatId: string, value: boolean) => void;
   isCurrentChatGenerating: () => boolean;
 }
@@ -32,10 +34,12 @@ export const useChatStore = create<ExtendedChatState>()(
       sidebarOpen: false,
       responseMode: 'normal',
       rudenessMode: 'rude',
+      selectedModel: 'deepseek/deepseek-chat',
       generatingChatIds: new Set<string>(),
 
       setResponseMode: (mode) => set({ responseMode: mode }),
       setRudenessMode: (mode) => set({ rudenessMode: mode }),
+      setSelectedModel: (modelId) => set({ selectedModel: modelId }),
 
       setGeneratingChat: (chatId, value) => {
         set((state) => {
@@ -152,6 +156,7 @@ export const useChatStore = create<ExtendedChatState>()(
         currentChatId: state.currentChatId,
         responseMode: state.responseMode,
         rudenessMode: state.rudenessMode,
+        selectedModel: state.selectedModel,
       }),
     }
   )
