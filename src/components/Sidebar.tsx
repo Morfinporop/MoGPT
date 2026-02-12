@@ -6,7 +6,6 @@ import { useState, useRef, useEffect } from 'react';
 import { Turnstile } from '@marsidev/react-turnstile';
 
 const TURNSTILE_SITE_KEY = '0x4AAAAAACa5EobYKh_TrmuZ';
-const AI_ICON = 'https://grizly.club/uploads/posts/2023-01/1674651078_grizly-club-p-neiroset-klipart-14.png';
 
 type ModalType = 'terms' | 'privacy' | 'cookies' | 'profile' | 'auth' | null;
 
@@ -671,15 +670,7 @@ function AuthModal({ onClose }: { onClose: () => void }) {
           animate={shake ? { x: [-4, 4, -4, 4, 0] } : {}}
           transition={{ duration: 0.3 }}
         >
-          <div className="px-6 pt-8 pb-4 text-center">
-            <motion.div
-              initial={{ scale: 0, rotate: -180 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ type: 'spring', stiffness: 200 }}
-              className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-violet-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-2xl shadow-violet-500/30 glow-soft"
-            >
-              <img src={AI_ICON} alt="AI" className="w-8 h-8 object-contain" />
-            </motion.div>
+          <div className="px-6 pt-6 pb-2 text-center">
             <h2 className="text-xl font-bold text-white mb-1">MoSeek</h2>
             <p className="text-xs text-zinc-500">
               {step === 'verify'
@@ -698,7 +689,7 @@ function AuthModal({ onClose }: { onClose: () => void }) {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
               >
-                <div className="flex mx-6 mb-4 rounded-xl glass-light p-1">
+                <div className="flex mx-6 mt-4 mb-6 rounded-xl glass-light p-1">
                   <button
                     type="button"
                     onClick={() => { setMode('login'); setError(''); }}
@@ -782,15 +773,17 @@ function AuthModal({ onClose }: { onClose: () => void }) {
                     </button>
                   </div>
 
-                  <div className="flex justify-center pt-1 overflow-hidden rounded-xl [&_iframe]:!w-full [&>div]:!w-full [&_div]:!w-full">
-                    <Turnstile
-                      ref={turnstileRef}
-                      siteKey={TURNSTILE_SITE_KEY}
-                      onSuccess={(token) => setTurnstileToken(token)}
-                      onError={() => setTurnstileToken('')}
-                      onExpire={() => setTurnstileToken('')}
-                      options={{ theme: 'dark', size: 'flexible' }}
-                    />
+                  <div className="flex justify-center pt-1 [&_iframe]:!rounded-xl [&_iframe]:!overflow-hidden [&>div]:!rounded-xl [&>div]:!overflow-hidden [&_div]:!rounded-xl [&_div]:!overflow-hidden" style={{ overflow: 'hidden', borderRadius: '12px' }}>
+                    <div style={{ overflow: 'hidden', borderRadius: '12px', width: '100%' }}>
+                      <Turnstile
+                        ref={turnstileRef}
+                        siteKey={TURNSTILE_SITE_KEY}
+                        onSuccess={(token) => setTurnstileToken(token)}
+                        onError={() => setTurnstileToken('')}
+                        onExpire={() => setTurnstileToken('')}
+                        options={{ theme: 'dark', size: 'flexible' }}
+                      />
+                    </div>
                   </div>
 
                   <motion.button
