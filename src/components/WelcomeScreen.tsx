@@ -10,16 +10,41 @@ const GREETING_TEXTS = [
   "Жду твой запрос...",
   "О чём поговорим?",
   "Какую задачу решаем?",
+  "Давай создадим что-то крутое",
+  "Новый день — новые идеи",
+  "Спрашивай, не стесняйся",
+  "Я весь во внимании",
+  "Начнём творить?",
+  "Что нового придумаем?",
+  "Какие планы на сегодня?",
+  "Давай разберёмся вместе",
+  "Готов помочь с чем угодно",
+  "Задавай любой вопрос",
+  "Время продуктивной работы",
+  "Придумаем что-то интересное?",
+  "Мозговой штурм начинается",
+  "Сегодня будет продуктивно",
+  "Открыт для любых задач",
+  "Погнали кодить?",
+  "Какой проект делаем?",
+  "Расскажи, что на уме",
+  "Помогу разобраться в чём угодно",
+  "Вперёд к новым решениям",
+  "Сегодня без ограничений",
+  "Что будем строить?",
+  "Идеи уже ждут реализации",
 ];
 
 export function WelcomeScreen() {
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [text, setText] = useState('');
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % GREETING_TEXTS.length);
-    }, 5000);
-    return () => clearInterval(interval);
+    const today = new Date();
+    const dayOfYear = Math.floor(
+      (today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000
+    );
+    const index = dayOfYear % GREETING_TEXTS.length;
+    setText(GREETING_TEXTS[index]);
   }, []);
 
   return (
@@ -27,20 +52,17 @@ export function WelcomeScreen() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="flex flex-col items-center justify-center h-full min-h-[60vh]"
+      className="flex flex-col items-center justify-center"
+      style={{ minHeight: 'calc(100vh - 180px)', paddingTop: '10vh' }}
     >
-      <AnimatePresence mode="wait">
-        <motion.h1
-          key={currentIndex}
-          initial={{ opacity: 0, y: 20, filter: 'blur(10px)' }}
-          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-          exit={{ opacity: 0, y: -20, filter: 'blur(10px)' }}
-          transition={{ duration: 0.8, ease: 'easeInOut' }}
-          className="text-3xl md:text-4xl lg:text-5xl font-bold text-center px-4 text-white"
-        >
-          {GREETING_TEXTS[currentIndex]}
-        </motion.h1>
-      </AnimatePresence>
+      <motion.h1
+        initial={{ opacity: 0, y: 20, filter: 'blur(10px)' }}
+        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        transition={{ duration: 0.8, ease: 'easeInOut' }}
+        className="text-3xl md:text-4xl lg:text-5xl font-bold text-center px-4 text-white"
+      >
+        {text}
+      </motion.h1>
     </motion.div>
   );
 }
