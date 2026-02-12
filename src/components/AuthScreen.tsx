@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, User, Eye, EyeOff, ArrowRight, Sparkles, AlertCircle } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, ArrowRight, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 
 type AuthMode = 'login' | 'register';
@@ -50,14 +50,6 @@ export function AuthScreen() {
     setIsLoading(false);
   };
 
-  const switchMode = () => {
-    setMode(mode === 'login' ? 'register' : 'login');
-    setName('');
-    setEmail('');
-    setPassword('');
-    setError('');
-  };
-
   return (
     <div className="fixed inset-0 bg-[#050508] flex items-center justify-center p-4 overflow-hidden">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -86,9 +78,13 @@ export function AuthScreen() {
                 initial={{ scale: 0, rotate: -180 }}
                 animate={{ scale: 1, rotate: 0 }}
                 transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-                className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-violet-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-2xl shadow-violet-500/30 glow-soft"
+                className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-violet-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-2xl shadow-violet-500/30 glow-soft overflow-hidden"
               >
-                <Sparkles className="w-10 h-10 text-white" />
+                <img
+                  src="https://img.icons8.com/fluency/96/artificial-intelligence.png"
+                  alt="AI"
+                  className="w-12 h-12 object-contain"
+                />
               </motion.div>
 
               <motion.h1
@@ -123,7 +119,7 @@ export function AuthScreen() {
             <div className="flex mx-8 mb-6 rounded-xl glass-light p-1">
               <button
                 type="button"
-                onClick={() => setMode('login')}
+                onClick={() => { setMode('login'); setError(''); setName(''); setEmail(''); setPassword(''); }}
                 className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 ${
                   mode === 'login'
                     ? 'bg-violet-500/20 text-violet-300 shadow-lg shadow-violet-500/10'
@@ -134,7 +130,7 @@ export function AuthScreen() {
               </button>
               <button
                 type="button"
-                onClick={() => setMode('register')}
+                onClick={() => { setMode('register'); setError(''); setName(''); setEmail(''); setPassword(''); }}
                 className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 ${
                   mode === 'register'
                     ? 'bg-violet-500/20 text-violet-300 shadow-lg shadow-violet-500/10'
@@ -216,11 +212,7 @@ export function AuthScreen() {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-400 transition-colors"
                 >
-                  {showPassword ? (
-                    <EyeOff className="w-5 h-5" />
-                  ) : (
-                    <Eye className="w-5 h-5" />
-                  )}
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
 
@@ -247,38 +239,8 @@ export function AuthScreen() {
                   </>
                 )}
               </motion.button>
-
-              <p className="text-center text-sm text-zinc-600 pt-2">
-                {mode === 'login' ? (
-                  <>
-                    Нет аккаунта?{' '}
-                    <button
-                      type="button"
-                      onClick={switchMode}
-                      className="text-violet-400 hover:text-violet-300 transition-colors"
-                    >
-                      Зарегистрируйся
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    Уже есть аккаунт?{' '}
-                    <button
-                      type="button"
-                      onClick={switchMode}
-                      className="text-violet-400 hover:text-violet-300 transition-colors"
-                    >
-                      Войди
-                    </button>
-                  </>
-                )}
-              </p>
             </form>
           </div>
-
-          <p className="text-center text-[11px] text-zinc-700 mt-4">
-            MoSeek V3 • AI Assistant
-          </p>
         </motion.div>
       </motion.div>
     </div>
