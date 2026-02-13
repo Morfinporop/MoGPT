@@ -27,15 +27,33 @@ function DualMessagePair({ leftMessage, rightMessage }: DualMessagePairProps) {
       transition={{ duration: 0.4 }}
       className="w-full"
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
-        {/* Левая нейросеть */}
-        <div className="min-w-0 pr-2 border-r border-zinc-700/30">
-          <ChatMessage message={leftMessage} compact side="left" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Левая колонка — первая нейросеть */}
+        <div className="min-w-0 border border-zinc-700/30 rounded-2xl p-3 bg-white/[0.02]">
+          {/* Название модели сверху */}
+          {leftMessage.model && (
+            <div className="flex items-center gap-1.5 mb-2 px-1">
+              <div className="w-2 h-2 rounded-full bg-violet-500/60 animate-pulse" />
+              <span className="text-[11px] text-violet-400/80 font-medium tracking-wide">
+                {leftMessage.model}
+              </span>
+            </div>
+          )}
+          <ChatMessage message={leftMessage} compact hideModelLabel />
         </div>
 
-        {/* Правая нейросеть */}
-        <div className="min-w-0 pl-2">
-          <ChatMessage message={rightMessage} compact side="right" />
+        {/* Правая колонка — вторая нейросеть */}
+        <div className="min-w-0 border border-zinc-700/30 rounded-2xl p-3 bg-white/[0.02]">
+          {/* Название модели сверху */}
+          {rightMessage.model && (
+            <div className="flex items-center gap-1.5 mb-2 px-1">
+              <div className="w-2 h-2 rounded-full bg-blue-500/60 animate-pulse" />
+              <span className="text-[11px] text-blue-400/80 font-medium tracking-wide">
+                {rightMessage.model}
+              </span>
+            </div>
+          )}
+          <ChatMessage message={rightMessage} compact hideModelLabel />
         </div>
       </div>
     </motion.div>
