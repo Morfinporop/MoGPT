@@ -4,14 +4,6 @@ export const MODEL_ICON = 'https://img.icons8.com/?size=100&id=77iHQnb2ZTjZ&form
 
 export const AI_MODELS: AIModel[] = [
   {
-    id: 'z-ai/glm-4.5-air:free',
-    name: 'MoSeek GLM 4.5',
-    description: 'GLM 4.5 Air',
-    provider: 'MoGPT',
-    icon: MODEL_ICON,
-    color: 'from-blue-400 to-indigo-500',
-  },
-  {
     id: 'stepfun/step-3.5-flash:free',
     name: 'MoSeek Step 3.5',
     description: 'Step 3.5 Flash',
@@ -21,6 +13,6 @@ export const AI_MODELS: AIModel[] = [
   },
 ];
 
-export const DEFAULT_MODEL = 'z-ai/glm-4.5-air:free';
+export const DEFAULT_MODEL = 'stepfun/step-3.5-flash:free';
 
 export const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
