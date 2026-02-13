@@ -1,5 +1,5 @@
 import { useEffect, useRef, useMemo } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useChatStore } from '../store/chatStore';
 import { ChatMessage } from './ChatMessage';
 import { WelcomeScreen } from './WelcomeScreen';
@@ -21,16 +21,24 @@ interface DualMessagePairProps {
 
 function DualMessagePair({ leftMessage, rightMessage }: DualMessagePairProps) {
   return (
-    <div className="w-full max-w-6xl mx-auto">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="min-w-0">
-          <ChatMessage message={leftMessage} />
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="w-full"
+    >
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
+        {/* Левая нейросеть */}
+        <div className="min-w-0 pr-2 border-r border-zinc-700/30">
+          <ChatMessage message={leftMessage} compact side="left" />
         </div>
-        <div className="min-w-0">
-          <ChatMessage message={rightMessage} />
+
+        {/* Правая нейросеть */}
+        <div className="min-w-0 pl-2">
+          <ChatMessage message={rightMessage} compact side="right" />
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
