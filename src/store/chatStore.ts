@@ -88,9 +88,16 @@ export const useChatStore = create<ExtendedChatState>()(
       addMessage: (message) => {
         const msgId = crypto.randomUUID();
         const newMessage: Message = {
-          ...message,
           id: msgId,
+          role: message.role,
+          content: message.content,
           timestamp: new Date(),
+          isLoading: message.isLoading,
+          model: message.model,
+          thinking: message.thinking,
+          isTyping: message.isTyping,
+          dualPosition: message.dualPosition,
+          dualPairId: message.dualPairId,
         };
 
         set((state) => {
