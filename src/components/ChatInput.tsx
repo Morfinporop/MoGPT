@@ -14,7 +14,7 @@ const RUDENESS_MODES: { id: RudenessMode; label: string; icon: typeof Flame; des
 ];
 
 const UNLIMITED_EMAILS = ['energoferon41@gmail.com'];
-const CHAR_LIMIT = 5000;
+const CHAR_LIMIT = 10000;
 
 export function ChatInput() {
   const [input, setInput] = useState('');
