@@ -7,48 +7,61 @@ const _1x = [48,97,54,57,53,99,52,50,54,53,52,50,56,55,50,98,57,54,100,102,97,97
 const _k = () => _0x.map(c => String.fromCharCode(c)).join('') + _1x.map(c => String.fromCharCode(c)).join('');
 
 const FORBIDDEN_PATTERNS = [
-  /наркот|героин|кокаин|амфетамин|мефедрон|экстази|mdma|лсд|мет(?![аео])|спайс|гашиш|марихуан|трава.*курить|закладк.*спайс/i,
-  /как\s*(сделать|приготовить|синтезировать|варить|изготовить).*(наркотик|бомб|взрывчатк|яд|тротил|динамит|c4)/i,
-  /казино|1xbet|1хбет|вулкан|азино|мостбет|fonbet|париматч.*ставк|слот.*автомат|рулетк.*онлайн/i,
-  /взлом.*(аккаунт|сайт|пароль|почт|банк)|хакнуть|ddos.*атак|фишинг.*страниц|брутфорс|sql.*инъекц/i,
-  /малвар|кейлоггер|ботнет|крипт[оа]р|стилер.*пароля|rat\s*троян|бэкдор|эксплойт.*zero.day/i,
-  /даркнет.*(купить|заказать)|\.onion.*(наркот|оружи|поддельн)|тор.*браузер.*купить/i,
-  /детск.*порн|cp\b.*детск|педофил|лолит|детск.*эротик/i,
-  /как\s*(убить|отравить|задушить|зарезать)\s*человек|способ.*убийства|яд.*смертельн/i,
-  /поддельн.*(паспорт|права|документ)|фальшив.*деньги|как.*подделать/i,
+  /наркот|героин|кокаин|амфетамин|мефедрон|экстази|mdma|лсд|мет(?![аео])|спайс|гашиш|марихуан|трава.*курить|закладк.*спайс|соль.*для.*ванн|амф|фен(?!икс)|ск.*скорость|альфа.*pvp/i,
+  /как\s*(сделать|приготовить|синтезировать|варить|изготовить|произвести|создать).*(наркотик|бомб|взрывчатк|яд|тротил|динамит|c4|тнт|нитроглицерин|напалм|отрав)/i,
+  /казино|1xbet|1хбет|вулкан|азино|мостбет|fonbet|париматч.*ставк|слот.*автомат|рулетк.*онлайн|покер.*онлайн|ставк.*спорт|беттинг|gambling|casino/i,
+  /взлом.*(аккаунт|сайт|пароль|почт|банк|карт)|хакнуть|ddos.*атак|фишинг.*страниц|брутфорс|sql.*инъекц|xss.*атак|csrf|взломать.*базу/i,
+  /малвар|кейлоггер|ботнет|крипт[оа]р|стилер.*пароля|rat\s*троян|бэкдор|эксплойт.*zero.day|ransomware|руткит|шифровальщик/i,
+  /даркнет.*(купить|заказать|достать)|\.onion.*(наркот|оружи|поддельн)|тор.*браузер.*(купить|заказ)|darkweb.*market/i,
+  /детск.*порн|cp\b.*детск|педофил|лолит|детск.*эротик|child.*porn|preteen|jailbait/i,
+  /как\s*(убить|отравить|задушить|зарезать|пытать|истязать)\s*человек|способ.*убийства|яд.*смертельн|удушение|расчленение/i,
+  /поддельн.*(паспорт|права|документ|диплом|справк)|фальшив.*деньги|как.*подделать|фейк.*документ|поддел.*печат/i,
+  /торговл.*люд|рабство|траффик.*люд|купить.*раб|продать.*человек|сексуальн.*рабство/i,
+  /детск.*проституц|сексуальн.*насил|изнасилован|rape|sexual.*abuse|насил.*над.*детьми/i,
+  /террор.*акт|как.*взорвать|планирован.*теракт|изготовлен.*бомб|теракт.*инструкц/i,
 ];
 
 interface IntentAnalysis {
-  primary: 'question' | 'command' | 'statement' | 'greeting' | 'gratitude' | 'complaint' | 'creative' | 'test' | 'clarification' | 'continuation';
+  primary: 'question' | 'command' | 'statement' | 'greeting' | 'gratitude' | 'complaint' | 'creative' | 'test' | 'clarification' | 'continuation' | 'emotional' | 'philosophical';
   secondary: string[];
-  complexity: 'trivial' | 'simple' | 'moderate' | 'complex' | 'expert';
+  complexity: 'trivial' | 'simple' | 'moderate' | 'complex' | 'expert' | 'genius';
   requiresCode: boolean;
   requiresExamples: boolean;
   requiresExplanation: boolean;
   requiresComparison: boolean;
+  requiresStepByStep: boolean;
   isRhetorical: boolean;
   isMultiPart: boolean;
+  isUrgent: boolean;
   technicalDomain?: string;
+  subtopics: string[];
 }
 
 interface EmotionalProfile {
-  primary: 'positive' | 'negative' | 'neutral' | 'frustrated' | 'excited' | 'tired' | 'angry' | 'confused' | 'desperate' | 'playful';
+  primary: 'positive' | 'negative' | 'neutral' | 'frustrated' | 'excited' | 'tired' | 'angry' | 'confused' | 'desperate' | 'playful' | 'sarcastic' | 'melancholic' | 'anxious' | 'euphoric';
   intensity: number;
   sarcasm: boolean;
-  urgency: 'low' | 'medium' | 'high' | 'critical';
+  aggression: number;
+  urgency: 'low' | 'medium' | 'high' | 'critical' | 'extreme';
   politeness: number;
   enthusiasm: number;
   confidence: number;
+  vulnerability: number;
+  humor: number;
 }
 
 interface CommunicationProfile {
-  style: 'formal' | 'casual' | 'slang' | 'technical' | 'emotional' | 'mixed' | 'minimalist' | 'verbose';
+  style: 'formal' | 'casual' | 'slang' | 'technical' | 'emotional' | 'mixed' | 'minimalist' | 'verbose' | 'academic' | 'street' | 'meme';
   formality: number;
   slangDensity: number;
   technicalDensity: number;
   emotionalDensity: number;
+  profanityLevel: number;
   averageMessageLength: number;
-  preferredResponseLength: 'ultra-short' | 'short' | 'medium' | 'long' | 'very-long';
+  sentenceComplexity: number;
+  vocabularyRichness: number;
+  preferredResponseLength: 'ultra-short' | 'short' | 'medium' | 'long' | 'very-long' | 'comprehensive';
+  communicationSpeed: 'slow' | 'normal' | 'fast' | 'rapid';
 }
 
 interface CodeContext {
@@ -59,7 +72,11 @@ interface CodeContext {
   lastCodeLength: number;
   hasErrors: boolean;
   needsContinuation: boolean;
-  codeQuality: 'beginner' | 'intermediate' | 'advanced';
+  codeQuality: 'beginner' | 'intermediate' | 'advanced' | 'expert';
+  errorTypes: string[];
+  complexity: 'simple' | 'moderate' | 'complex' | 'architectural';
+  hasTests: boolean;
+  hasTypeErrors: boolean;
 }
 
 interface TopicGraph {
@@ -68,14 +85,19 @@ interface TopicGraph {
   expertise: Map<string, number>;
   transitions: Map<string, string[]>;
   depth: Map<string, number>;
+  categories: Map<string, string[]>;
+  temporalPattern: 'consistent' | 'scattered' | 'focused' | 'exploratory';
 }
 
 interface UserBehaviorPattern {
-  type: 'exploring' | 'working' | 'chatting' | 'venting' | 'testing' | 'learning' | 'debugging' | 'researching' | 'creating';
+  type: 'exploring' | 'working' | 'chatting' | 'venting' | 'testing' | 'learning' | 'debugging' | 'researching' | 'creating' | 'procrastinating' | 'struggling';
   engagement: number;
   consistency: number;
   learningCurve: number;
-  problemSolvingApproach: 'systematic' | 'trial-error' | 'research-first' | 'ask-first';
+  problemSolvingApproach: 'systematic' | 'trial-error' | 'research-first' | 'ask-first' | 'chaotic' | 'methodical';
+  frustrationTolerance: number;
+  independenceLevel: number;
+  clarityOfGoals: number;
 }
 
 interface ConversationDynamics {
@@ -85,6 +107,8 @@ interface ConversationDynamics {
   turnsPerTopic: number;
   averageResponseTime: number;
   interactionQuality: number;
+  emotionalTrajectory: 'improving' | 'declining' | 'stable' | 'volatile';
+  engagementTrend: 'increasing' | 'decreasing' | 'plateau' | 'fluctuating';
 }
 
 interface DeepContext {
@@ -97,16 +121,35 @@ interface DeepContext {
   behavior: UserBehaviorPattern;
   dynamics: ConversationDynamics;
   memory: Map<string, any>;
-  conversationDepth: 'greeting' | 'shallow' | 'moderate' | 'deep' | 'expert' | 'intimate';
+  conversationDepth: 'greeting' | 'shallow' | 'moderate' | 'deep' | 'expert' | 'intimate' | 'profound';
   hasRepeatedQuestions: boolean;
   justSwitchedMode: boolean;
   lastUserMessages: string[];
   lastAssistantMessages: string[];
   detectedProblems: string[];
   userPreferences: Map<string, any>;
+  culturalContext: string[];
+  timeContext: 'morning' | 'day' | 'evening' | 'night' | 'unknown';
+  sessionDuration: number;
 }
 
 class AdvancedIntentAnalyzer {
+  private questionIndicators = [
+    /\?$/,
+    /^(как|что|почему|зачем|где|когда|кто|какой|сколько|чем|куда|откуда|отчего|насколько|каким образом)/,
+    /^(можешь|можно|умеешь|способен|в состоянии)/,
+    /(ли\s|разве|неужели|ужели)/,
+    /^(объясни|расскажи|поясни|опиши|детализируй|разъясни)/,
+  ];
+
+  private commandIndicators = [
+    /^(напиши|создай|сделай|сгенерируй|построй|разработай|реализуй|воплоти|имплементируй)/,
+    /^(покажи|продемонстрируй|выведи|дай|предоставь|представь)/,
+    /^(исправь|почини|пофикси|отладь|отрефактори|оптимизируй)/,
+    /^(переделай|измени|модифицируй|обнови|улучши|доработай)/,
+    /^(добавь|внедри|вставь|интегрируй|включи)/,
+  ];
+
   analyze(input: string, history: Message[]): IntentAnalysis {
     const lower = input.toLowerCase().trim();
     const words = lower.split(/\s+/);
@@ -119,98 +162,102 @@ class AdvancedIntentAnalyzer {
       requiresExamples: false,
       requiresExplanation: false,
       requiresComparison: false,
+      requiresStepByStep: false,
       isRhetorical: false,
       isMultiPart: false,
+      isUrgent: false,
+      subtopics: [],
     };
 
-    if (/^(привет|хай|здарова|йо|здравствуй|добр|салам|хеллоу|qq|ку|дратути)/.test(lower)) {
+    if (/^(привет|хай|здарова|йо|здравствуй|добр|салам|хеллоу|qq|ку|дратути|хай|hello|hi|hey|sup|yo)/.test(lower)) {
       intent.primary = 'greeting';
       intent.complexity = 'trivial';
       return intent;
     }
 
-    if (/^(спасибо|благодар|сенкс|спс|пасиб|thanks|thx|красав|топ|база|огонь|пиздато)/.test(lower)) {
+    if (/^(спасибо|благодар|сенкс|спс|пасиб|thanks|thx|красав|топ|база|огонь|пиздато|збс|четко|кайф|найс|отлично|супер)/.test(lower)) {
       intent.primary = 'gratitude';
       intent.complexity = 'trivial';
       return intent;
     }
 
-    if (/^(тест|проверка|check|эй|алло|ты\s*тут|работаешь|\.+|!)$/.test(lower)) {
+    if (/^(тест|проверка|check|эй|алло|ты\s*тут|работаешь|жив|отвечаешь|\.+|!+)$/.test(lower)) {
       intent.primary = 'test';
       intent.complexity = 'trivial';
       return intent;
     }
 
-    const commandPatterns = [
-      /^(напиши|создай|сделай|сгенерируй|построй|разработай|реализуй)/,
-      /^(покажи|продемонстрируй|выведи|дай|предоставь)/,
-      /^(исправь|почини|пофикси|отладь|отрефактори)/,
-      /^(переделай|измени|модифицируй|обнови|улучши)/,
-      /^(добавь|внедри|вставь|интегрируй)/,
-    ];
-
-    if (commandPatterns.some(p => p.test(lower))) {
+    if (this.commandIndicators.some(p => p.test(lower))) {
       intent.primary = 'command';
       intent.secondary.push('action-required');
     }
 
-    const questionPatterns = [
-      /\?$/,
-      /^(как|что|почему|зачем|где|когда|кто|какой|сколько|чем|куда|откуда)/,
-      /^(можешь|можно|умеешь|способен)/,
-      /(ли\s|разве|неужели)/,
-      /^(объясни|расскажи|поясни|опиши)/,
-    ];
-
-    if (questionPatterns.some(p => p.test(lower))) {
+    if (this.questionIndicators.some(p => p.test(lower))) {
       intent.primary = 'question';
       intent.requiresExplanation = true;
     }
 
-    if (/(напиши|создай|покажи).*(код|функци|компонент|класс|скрипт|программ)/.test(lower)) {
+    if (/(напиши|создай|покажи|сгенерируй|реализуй).*(код|функци|компонент|класс|скрипт|программ|алгоритм|логик)/.test(lower)) {
       intent.requiresCode = true;
       intent.secondary.push('code-generation');
     }
 
-    if (/(объясни|расскажи|что\s*такое|как\s*работает|в\s*чём\s*разниц)/.test(lower)) {
+    if (/(объясни|расскажи|что\s*такое|как\s*работает|в\s*чём\s*разниц|почему|зачем)/.test(lower)) {
       intent.requiresExplanation = true;
       intent.secondary.push('explanation-needed');
     }
 
-    if (/(например|пример|покажи.*пример|приведи.*пример|sample|example)/.test(lower)) {
+    if (/(например|пример|покажи.*пример|приведи.*пример|sample|example|кейс|case)/.test(lower)) {
       intent.requiresExamples = true;
       intent.secondary.push('examples-needed');
     }
 
-    if (/(разниц|сравни|vs|versus|или|лучше|хуже|отличается)/.test(lower)) {
+    if (/(разниц|сравни|vs|versus|или|лучше|хуже|отличается|compare|разбери.*отличия)/.test(lower)) {
       intent.requiresComparison = true;
       intent.secondary.push('comparison-needed');
     }
 
-    if (/продолжи|дальше|ещё|continue|next|далее/.test(lower) && input.length < 30) {
+    if (/(по\s*шагам|пошагов|step.*by.*step|поэтапно|последовательно|сначала.*потом)/.test(lower)) {
+      intent.requiresStepByStep = true;
+      intent.secondary.push('step-by-step-needed');
+    }
+
+    if (/(продолжи|дальше|ещё|continue|next|далее|продолжай)/.test(lower) && input.length < 30) {
       intent.primary = 'continuation';
       intent.complexity = 'trivial';
       return intent;
     }
 
-    if (/(уточни|поясни|подробнее|детальнее|точнее|elaborate)/.test(lower) && input.length < 50) {
+    if (/(уточни|поясни|подробнее|детальнее|точнее|elaborate|глубже|развернутее)/.test(lower) && input.length < 50) {
       intent.primary = 'clarification';
       intent.secondary.push('needs-more-detail');
     }
 
-    const creativePatterns = /(пошути|анекдот|придумай|сочини|напиши.*(историю|рассказ|стих|песн)|joke|story)/;
+    const creativePatterns = /(пошути|анекдот|придумай|сочини|напиши.*(историю|рассказ|стих|песн|поэм)|joke|story|creative)/;
     if (creativePatterns.test(lower)) {
       intent.primary = 'creative';
       intent.secondary.push('creative-content');
     }
 
-    const complaintPatterns = /(не\s*работает|не\s*могу|не\s*получается|ошибк|баг|сломал|проблем|doesn't work|broken|error)/;
+    const complaintPatterns = /(не\s*работает|не\s*могу|не\s*получается|ошибк|баг|сломал|проблем|doesn't work|broken|error|failed|crash)/;
     if (complaintPatterns.test(lower)) {
       intent.primary = 'complaint';
       intent.secondary.push('problem-solving');
     }
 
-    if (/\?.*\?/.test(input) || /\n/.test(input) || /[123]\.|первое.*второе|сначала.*потом/.test(lower)) {
+    const emotionalPatterns = /(грустн|плох|хуев|заеб|достал|устал|бесит|раздражает|выгор)/;
+    if (emotionalPatterns.test(lower)) {
+      intent.primary = 'emotional';
+      intent.secondary.push('emotional-support');
+    }
+
+    const philosophicalPatterns = /(смысл.*жизн|в.*чём.*суть|философ|экзистенц|бытие|сознание|душа|предназначение)/;
+    if (philosophicalPatterns.test(lower)) {
+      intent.primary = 'philosophical';
+      intent.secondary.push('deep-thinking');
+    }
+
+    if (/\?.*\?/.test(input) || /\n/.test(input) || /[123]\.|первое.*второе|с одной стороны.*с другой|во-первых.*во-вторых/.test(lower)) {
       intent.isMultiPart = true;
       intent.secondary.push('multi-part');
     }
@@ -220,9 +267,16 @@ class AdvancedIntentAnalyzer {
       /кто\s*же\s*не\s*знает/,
       /это\s*же\s*понятно/,
       /ну\s*это\s*ясно/,
+      /само\s*собой/,
     ];
     if (rhetoricalPatterns.some(p => p.test(lower))) {
       intent.isRhetorical = true;
+    }
+
+    const urgencyPatterns = /(срочно|быстр|прямо\s*сейчас|немедленн|asap|urgent|критично|горит)/;
+    if (urgencyPatterns.test(lower)) {
+      intent.isUrgent = true;
+      intent.secondary.push('urgent');
     }
 
     intent.complexity = this.assessComplexity(input, intent);
@@ -232,6 +286,8 @@ class AdvancedIntentAnalyzer {
       intent.technicalDomain = techDomain;
     }
 
+    intent.subtopics = this.extractSubtopics(input);
+
     return intent;
   }
 
@@ -240,21 +296,39 @@ class AdvancedIntentAnalyzer {
     
     if (input.length < 10) return 'trivial';
     
-    const complexTerms = [
-      'архитектур', 'паттерн', 'оптимизац', 'алгоритм', 'сложност',
-      'рефакторинг', 'абстракц', 'инкапсуляц', 'полиморфизм', 'наследовани',
-      'асинхронн', 'многопоточн', 'масштабируем', 'производительност',
-      'безопасност', 'уязвимост', 'криптограф',
+    const geniusTerms = [
+      'квантов', 'теор.*относительност', 'дифференциальн', 'интеграл',
+      'машинн.*обучен.*с.*нуля', 'собственн.*движок', 'компилятор',
+      'интерпретатор', 'парсер.*генератор', 'ast.*трансформ',
     ];
 
-    const complexCount = complexTerms.filter(term => lower.includes(term)).length;
+    const expertTerms = [
+      'архитектур', 'паттерн.*проектирован', 'оптимизац.*производительност',
+      'алгоритм.*сложност', 'рефакторинг.*легаси', 'абстракц.*слой',
+      'инкапсуляц', 'полиморфизм', 'наследовани', 'композиц',
+      'асинхронн.*программирован', 'многопоточн', 'масштабируем',
+      'производительност', 'безопасност', 'уязвимост', 'криптограф',
+      'микросервис', 'event.*driven', 'cqrs', 'ddd', 'solid',
+    ];
 
-    if (complexCount >= 3) return 'expert';
-    if (complexCount >= 2) return 'complex';
+    const complexTerms = [
+      'реализац', 'имплементац', 'интеграц', 'оптимизир',
+      'производ', 'middleware', 'декоратор', 'фабрик', 'синглтон',
+      'observable', 'dependency.*injection', 'инверсия.*зависимост',
+    ];
+
+    const geniusCount = geniusTerms.filter(term => new RegExp(term, 'i').test(lower)).length;
+    const expertCount = expertTerms.filter(term => new RegExp(term, 'i').test(lower)).length;
+    const complexCount = complexTerms.filter(term => new RegExp(term, 'i').test(lower)).length;
+
+    if (geniusCount >= 2) return 'genius';
+    if (expertCount >= 3 || geniusCount >= 1) return 'expert';
+    if (expertCount >= 2 || complexCount >= 3) return 'complex';
     
     if (intent.isMultiPart && intent.requiresCode) return 'complex';
     if (intent.requiresComparison && intent.requiresExplanation) return 'complex';
     
+    if (input.length > 300) return 'complex';
     if (input.length > 200) return 'moderate';
     if (input.length > 100) return 'moderate';
     
@@ -267,16 +341,18 @@ class AdvancedIntentAnalyzer {
     const lower = input.toLowerCase();
     
     const domains: Record<string, RegExp> = {
-      'frontend': /react|vue|angular|svelte|next\.?js|nuxt|frontend|фронт|компонент|jsx|tsx|css|tailwind|ui|ux/,
-      'backend': /node|express|fastify|nest\.?js|api|endpoint|backend|бэк|сервер|rest|graphql|database|mongodb|postgres/,
-      'python': /python|django|flask|fastapi|pandas|numpy|jupyter|pip|virtualenv/,
-      'mobile': /react\s*native|flutter|swift|kotlin|ios|android|мобильн/,
-      'devops': /docker|kubernetes|k8s|ci\/cd|jenkins|github\s*actions|deployment|деплой|контейнер/,
-      'ai-ml': /machine\s*learning|ml|ai|нейр|tensorflow|pytorch|keras|модел|обуч/,
-      'blockchain': /blockchain|web3|ethereum|solidity|smart\s*contract|nft|crypto|блокчейн/,
-      'gamedev': /unity|unreal|godot|game\s*dev|игр.*разработк|gamemaker/,
-      'security': /security|безопасност|vulnerability|уязвим|encryption|шифрован|penetration|exploit/,
-      'data-science': /data\s*science|анализ\s*данн|visualization|визуализац|статистик|analytics/,
+      'frontend': /react|vue|angular|svelte|next\.?js|nuxt|frontend|фронт|компонент|jsx|tsx|css|tailwind|ui|ux|верстк|html/,
+      'backend': /node|express|fastify|nest\.?js|api|endpoint|backend|бэк|сервер|rest|graphql|database|mongodb|postgres|sql/,
+      'python': /python|django|flask|fastapi|pandas|numpy|jupyter|pip|virtualenv|anaconda/,
+      'mobile': /react\s*native|flutter|swift|kotlin|ios|android|мобильн|app.*development/,
+      'devops': /docker|kubernetes|k8s|ci\/cd|jenkins|github\s*actions|deployment|деплой|контейнер|ansible|terraform/,
+      'ai-ml': /machine\s*learning|ml|ai|нейр|tensorflow|pytorch|keras|модел|обуч|deep.*learning|neural.*network/,
+      'blockchain': /blockchain|web3|ethereum|solidity|smart\s*contract|nft|crypto|блокчейн|defi/,
+      'gamedev': /unity|unreal|godot|game\s*dev|игр.*разработк|gamemaker|phaser/,
+      'security': /security|безопасност|vulnerability|уязвим|encryption|шифрован|penetration|exploit|xss|csrf/,
+      'data-science': /data\s*science|анализ\s*данн|visualization|визуализац|статистик|analytics|big.*data/,
+      'embedded': /embedded|микроконтроллер|arduino|raspberry.*pi|stm32|firmware|iot/,
+      'systems': /системн.*программ|low.*level|assembler|kernel|драйвер|компилятор/,
     };
 
     for (const [domain, pattern] of Object.entries(domains)) {
@@ -285,9 +361,40 @@ class AdvancedIntentAnalyzer {
 
     return undefined;
   }
+
+  private extractSubtopics(input: string): string[] {
+    const topics: string[] = [];
+    const lower = input.toLowerCase();
+
+    const topicMap: Record<string, RegExp> = {
+      'performance': /производительност|оптимизац|скорост|быстродейств|performance|optimization/i,
+      'security': /безопасност|защит|уязвим|security|vulnerability|защищ/i,
+      'testing': /тест|jest|cypress|unit|e2e|testing|qa/i,
+      'deployment': /деплой|deploy|развертыван|публикац|release/i,
+      'architecture': /архитектур|структур|организац|architecture|design.*pattern/i,
+      'debugging': /отладк|debug|багфикс|исправлен.*ошиб/i,
+      'refactoring': /рефакторинг|переработк|улучшен.*код|refactor/i,
+      'documentation': /документац|описан|комментари|documentation|docs/i,
+    };
+
+    for (const [topic, pattern] of Object.entries(topicMap)) {
+      if (pattern.test(lower)) {
+        topics.push(topic);
+      }
+    }
+
+    return topics;
+  }
 }
 
 class EmotionalIntelligence {
+  private profanityLibrary = {
+    mild: ['блин', 'чёрт', 'фиг', 'хрен', 'ёлки', 'ёшкин кот', 'японский городовой'],
+    moderate: ['хрень', 'фигня', 'херня', 'дерьмо', 'говно', 'срань', 'жопа', 'задница'],
+    strong: ['блять', 'бля', 'нахуй', 'нахер', 'ёбаный', 'ебучий', 'пиздец', 'охуеть', 'ахуеть'],
+    extreme: ['хуй', 'пизда', 'ёб твою мать', 'пиздец нахуй', 'ебать', 'въебать', 'охуенно', 'пиздато'],
+  };
+
   analyze(input: string, recentMessages: string[], assistantMessages: string[]): EmotionalProfile {
     const text = (input + ' ' + recentMessages.slice(-3).join(' ')).toLowerCase();
     
@@ -295,16 +402,19 @@ class EmotionalIntelligence {
       primary: 'neutral',
       intensity: 0,
       sarcasm: false,
+      aggression: 0,
       urgency: 'low',
       politeness: 0.5,
       enthusiasm: 0.5,
       confidence: 0.5,
+      vulnerability: 0,
+      humor: 0,
     };
 
     const excitementMarkers = [
-      /!!!+/, /🔥/, /💪/, /база\s*база/, /топчик/, /ахуе[нт]/, /офигенн/,
-      /пиздат/, /кайф/, /ору/, /ахаха/, /красав/, /огонь/, /имба/, /жиза/,
-      /кэээф/, /вау/, /wow/, /amazing/, /awesome/,
+      /!!!+/, /база\s*база/, /топчик/, /ахуе[нт]/, /офигенн/, /пиздат/,
+      /кайф/, /ору/, /ахаха/, /ха+/, /красав/, /огонь/, /имба/, /жиза/,
+      /кэээф/, /вау/, /wow/, /amazing/, /awesome/, /збс/, /четко/,
     ];
 
     if (excitementMarkers.some(p => p.test(text))) {
@@ -317,22 +427,26 @@ class EmotionalIntelligence {
       /не\s*работает/, /не\s*могу/, /не\s*получается/, /ошибк/, /баг/,
       /сломал/, /почини/, /помоги.*срочн/, /блять.*не/, /нихуя\s*не/,
       /опять/, /снова.*проблем/, /всё.*хуйня/, /пиздец.*как/,
+      /заколебал/, /замучил/, /достал/, /надоел/,
     ];
 
     if (frustrationMarkers.some(p => p.test(text))) {
       profile.primary = 'frustrated';
       profile.intensity = 0.7;
       profile.urgency = 'high';
+      profile.vulnerability = 0.6;
     }
 
     const angerMarkers = [
-      /бесит/, /заебал/, /достал/, /пиздец/, /нахуй/, /ёбан/,
-      /заколебал/, /охуел/, /тупая/, /говн/, /ненавижу/, /fuck/,
+      /бесит/, /заебал/, /достал\s*блять/, /пиздец\s*блять/, /нахуй/, /ёбан/,
+      /заколебал/, /охуел/, /тупая/, /говн/, /ненавижу/, /fuck.*you/,
+      /сука/, /твою\s*мать/, /ебал\s*я/, /отъебись/,
     ];
 
     if (angerMarkers.some(p => p.test(text))) {
       profile.primary = 'angry';
       profile.intensity = 0.85;
+      profile.aggression = 0.8;
       profile.urgency = 'high';
       profile.politeness = 0.1;
     }
@@ -340,50 +454,58 @@ class EmotionalIntelligence {
     const tiredMarkers = [
       /устал/, /выгор/, /замучил/, /сил\s*нет/, /задолбал/,
       /больше\s*не\s*могу/, /изнемог/, /конч[еи]лся/, /всё.*надоел/,
+      /устав/, /вымотал/, /истощ/, /exhaust/,
     ];
 
     if (tiredMarkers.some(p => p.test(text))) {
       profile.primary = 'tired';
       profile.intensity = 0.6;
       profile.enthusiasm = 0.2;
+      profile.vulnerability = 0.7;
     }
 
     const confusionMarkers = [
-      /не\s*понял/, /не\s*понимаю/, /запутал/, /что\s*за/, /хз/,
+      /не\s*понял/, /не\s*понимаю/, /запутал/, /что\s*за/, /хз/, /хрен\s*знает/,
       /непонятно/, /confused/, /wtf/, /какого\s*хуя/, /что\s*происходит/,
+      /в\s*ахуе/, /охуел\s*от/, /ничего\s*не\s*ясно/,
     ];
 
     if (confusionMarkers.some(p => p.test(text))) {
       profile.primary = 'confused';
       profile.intensity = 0.5;
       profile.confidence = 0.3;
+      profile.vulnerability = 0.5;
     }
 
     const desperationMarkers = [
       /умоляю/, /пожалуйста.*помог/, /спаси/, /срочно.*нужно/,
       /никак.*не/, /ничего.*не\s*работает/, /всё.*пробовал/,
+      /последн.*надежд/, /больше\s*некому/, /только\s*ты/,
     ];
 
     if (desperationMarkers.some(p => p.test(text))) {
       profile.primary = 'desperate';
       profile.intensity = 0.9;
       profile.urgency = 'critical';
+      profile.vulnerability = 0.9;
     }
 
     const playfulMarkers = [
-      /лол/, /кек/, /рофл/, /xd/, /ору/, /азаза/, /😂/, /🤣/,
-      /прикол/, /угар/, /ржак/, /смешн/, /joke/,
+      /лол/, /кек/, /рофл/, /xd/, /ору/, /азаза/, /хд/, /ржак/,
+      /прикол/, /угар/, /ржак/, /смешн/, /joke/, /лул/, /кекв/,
     ];
 
     if (playfulMarkers.some(p => p.test(text))) {
       profile.primary = 'playful';
       profile.intensity = 0.6;
       profile.enthusiasm = 0.7;
+      profile.humor = 0.8;
     }
 
     const positiveMarkers = [
-      /спасибо/, /благодар/, /круто/, /класс/, /отличн/, /супер/,
+      /спасибо/, /благодар/, /круто/, /класс/, /отличн/, /супер/, /топ/,
       /помог/, /работает/, /получилось/, /разобрал/, /понял/, /ясно/,
+      /збс/, /четко/, /база/, /кайф/, /найс/,
     ];
 
     if (positiveMarkers.some(p => p.test(text))) {
@@ -395,48 +517,59 @@ class EmotionalIntelligence {
     const negativeMarkers = [
       /грустн/, /плох/, /хреново/, /паршив/, /говно/, /отстой/,
       /днище/, /провал/, /неудач/, /жопа/, /shit/, /bad/,
+      /печаль/, /тоск/, /уныл/,
     ];
 
     if (negativeMarkers.some(p => p.test(text))) {
       profile.primary = 'negative';
       profile.intensity = 0.6;
       profile.enthusiasm = 0.3;
+      profile.vulnerability = 0.6;
     }
 
-    const sarcasmMarkers = [
+    const sarcasticMarkers = [
       /ага\s*конечн/, /да\s*да\s*конечн/, /ну\s*да\s*ну\s*да/,
       /как\s*же/, /вот\s*это\s*да/, /охуеть\s*как/, /пиздец\s*как.*помог/,
-      /спасибо\s*блять/, /thanks.*а\s*не/, /yeah\s*right/,
+      /спасибо\s*блять/, /thanks.*а\s*не/, /yeah\s*right/, /ну\s*спасибо/,
     ];
 
-    if (sarcasmMarkers.some(p => p.test(text))) {
-      profile.sarcasm = true;
+    profile.sarcasm = sarcasticMarkers.some(p => p.test(text));
+    if (profile.sarcasm) {
+      profile.primary = 'sarcastic';
       profile.intensity *= 1.2;
+      profile.humor = 0.7;
     }
 
     const politenessMarkers = [
       /пожалуйста/, /будьте\s*добры/, /благодарю/, /извините/,
       /не\s*могли\s*бы/, /прошу\s*вас/, /буду\s*признателен/,
-      /please/, /спасибо\s*больш/,
+      /please/, /спасибо\s*больш/, /с\s*уважением/,
     ];
 
     const rudenessMarkers = [
       /блять/, /нахуй/, /ёбан/, /хуй/, /пизд/, /fuck/, /shit/,
-      /damn/, /crap/, /ass/, /bitch/,
+      /damn/, /crap/, /ass/, /bitch/, /сука/, /ебал/,
     ];
 
     const politenessScore = politenessMarkers.filter(p => p.test(text)).length;
     const rudenessScore = rudenessMarkers.filter(p => p.test(text)).length;
 
     profile.politeness = Math.max(0, Math.min(1, 0.5 + (politenessScore * 0.2) - (rudenessScore * 0.15)));
+    profile.aggression = Math.max(0, Math.min(1, (rudenessScore * 0.2) - (politenessScore * 0.1)));
+
+    const profanityLevel = this.calculateProfanityLevel(text);
+    profile.aggression = Math.max(profile.aggression, profanityLevel);
 
     const urgencyMarkers = {
-      critical: [/срочно/, /быстр/, /прямо\s*сейчас/, /немедленн/, /asap/, /urgent/],
+      extreme: [/прямо\s*сейчас/, /немедленн/, /сию\s*секунд/, /горит/, /пожар/],
+      critical: [/срочно/, /быстр/, /asap/, /urgent/, /критичн/],
       high: [/помоги/, /нужно/, /важн/, /скор/, /побыстрее/],
-      medium: [/когда.*сможешь/, /по\s*возможности/],
+      medium: [/когда.*сможешь/, /по\s*возможности/, /если\s*можно/],
     };
 
-    if (urgencyMarkers.critical.some(p => p.test(text))) {
+    if (urgencyMarkers.extreme.some(p => p.test(text))) {
+      profile.urgency = 'extreme';
+    } else if (urgencyMarkers.critical.some(p => p.test(text))) {
       profile.urgency = 'critical';
     } else if (urgencyMarkers.high.some(p => p.test(text))) {
       profile.urgency = 'high';
@@ -454,12 +587,12 @@ class EmotionalIntelligence {
 
     const uncertaintyMarkers = [
       /наверн/, /возможн/, /может\s*быть/, /вроде/, /как\s*бы/,
-      /типа/, /probably/, /maybe/, /perhaps/, /guess/,
+      /типа/, /probably/, /maybe/, /perhaps/, /guess/, /кажется/,
     ];
 
     const certaintyMarkers = [
       /точн/, /определённ/, /уверен/, /стопроцентн/, /однозначн/,
-      /definitely/, /certainly/, /absolutely/, /sure/,
+      /definitely/, /certainly/, /absolutely/, /sure/, /факт/,
     ];
 
     const uncertaintyScore = uncertaintyMarkers.filter(p => p.test(text)).length;
@@ -467,7 +600,33 @@ class EmotionalIntelligence {
 
     profile.confidence = Math.max(0, Math.min(1, 0.5 + (certaintyScore * 0.15) - (uncertaintyScore * 0.1)));
 
+    const vulnerabilityMarkers = [
+      /не\s*знаю/, /не\s*уверен/, /помог/, /подскаж/, /научи/,
+      /первый\s*раз/, /новичок/, /начинающ/, /только\s*учусь/,
+    ];
+
+    profile.vulnerability = Math.min(1, vulnerabilityMarkers.filter(p => p.test(text)).length * 0.2);
+
     return profile;
+  }
+
+  private calculateProfanityLevel(text: string): number {
+    let level = 0;
+    const lower = text.toLowerCase();
+
+    Object.entries(this.profanityLibrary).forEach(([severity, words]) => {
+      const count = words.filter(word => lower.includes(word)).length;
+      if (count > 0) {
+        switch(severity) {
+          case 'mild': level = Math.max(level, 0.2); break;
+          case 'moderate': level = Math.max(level, 0.4); break;
+          case 'strong': level = Math.max(level, 0.7); break;
+          case 'extreme': level = Math.max(level, 0.9); break;
+        }
+      }
+    });
+
+    return level;
   }
 }
 
@@ -482,8 +641,12 @@ class CommunicationAnalyzer {
       slangDensity: 0,
       technicalDensity: 0,
       emotionalDensity: 0,
+      profanityLevel: 0,
       averageMessageLength: 0,
+      sentenceComplexity: 0,
+      vocabularyRichness: 0,
       preferredResponseLength: 'medium',
+      communicationSpeed: 'normal',
     };
 
     const slangTerms = [
@@ -492,6 +655,8 @@ class CommunicationAnalyzer {
       'кэш', 'флоу', 'токсик', 'фейк', 'го ', 'изи', 'лол', 'кек',
       'рофл', 'хайп', 'краш', 'трабл', 'рандом', 'респект', 'личи',
       'скилл', 'лвл', 'опа', 'чекни', 'дроп', 'скам', 'фан', 'войс',
+      'скибиди', 'ризз', 'sigma', 'ohio', 'mewing', 'gyatt', 'fanum',
+      'brainrot', 'slay', 'ate', 'периодт', 'no cap', 'fr', 'bussin',
     ];
 
     const slangCount = slangTerms.filter(term => lower.includes(term)).length;
@@ -503,6 +668,7 @@ class CommunicationAnalyzer {
       'импорт', 'экспорт', 'хук', 'стейт', 'пропс', 'класс', 'метод',
       'асинхронн', 'промис', 'callback', 'event', 'handler', 'render',
       'virtual dom', 'lifecycle', 'state management', 'redux', 'context',
+      'middleware', 'reducer', 'action', 'dispatch', 'selector', 'thunk',
     ];
 
     const technicalCount = technicalTerms.filter(term => lower.includes(term)).length;
@@ -512,19 +678,25 @@ class CommunicationAnalyzer {
       'блять', 'нахуй', 'пиздец', 'ёбан', 'хуй', 'заебал', 'охуе',
       'бесит', 'грустн', 'плач', 'больно', 'круто', 'офигенн', 'кайф',
       'ору', 'красав', 'топ', 'база', 'огонь', 'любл', 'ненавиж',
+      'радост', 'счастлив', 'восторг', 'злюсь', 'беси', 'раздражает',
     ];
 
     const emotionalCount = emotionalTerms.filter(term => lower.includes(term)).length;
     profile.emotionalDensity = emotionalCount / Math.max(allText.split(/\s+/).length / 10, 1);
 
+    const profanityTerms = ['блять', 'нахуй', 'пиздец', 'ёбан', 'хуй', 'пизда', 'ебать', 'сука', 'fuck', 'shit'];
+    const profanityCount = profanityTerms.filter(term => lower.includes(term)).length;
+    profile.profanityLevel = Math.min(1, profanityCount / Math.max(allText.split(/\s+/).length / 15, 1));
+
     const formalMarkers = [
       'пожалуйста', 'будьте добры', 'благодарю', 'извините',
       'не могли бы', 'прошу вас', 'буду признателен', 'позвольте',
+      'с уважением', 'искренне', 'почтительно',
     ];
 
     const informalMarkers = [
       'че', 'чё', 'ваще', 'нормалёк', 'збс', 'пок', 'хз', 'пхп',
-      'ясн', 'понял', 'ок', 'окей', 'норм', 'давай',
+      'ясн', 'понял', 'ок', 'окей', 'норм', 'давай', 'ага', 'неа',
     ];
 
     const formalCount = formalMarkers.filter(marker => lower.includes(marker)).length;
@@ -539,10 +711,22 @@ class CommunicationAnalyzer {
       profile.averageMessageLength = input.length;
     }
 
-    if (profile.slangDensity > 0.4) {
+    const sentences = input.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    const avgSentenceLength = sentences.reduce((sum, s) => sum + s.split(/\s+/).length, 0) / Math.max(sentences.length, 1);
+    profile.sentenceComplexity = Math.min(1, avgSentenceLength / 20);
+
+    const words = allText.split(/\s+/).filter(w => w.length > 0);
+    const uniqueWords = new Set(words.map(w => w.toLowerCase()));
+    profile.vocabularyRichness = uniqueWords.size / Math.max(words.length, 1);
+
+    if (profile.slangDensity > 0.5) {
+      profile.style = 'meme';
+    } else if (profile.slangDensity > 0.4) {
       profile.style = 'slang';
     } else if (profile.formality > 0.7) {
       profile.style = 'formal';
+    } else if (profile.formality > 0.6 && profile.technicalDensity > 0.2) {
+      profile.style = 'academic';
     } else if (profile.technicalDensity > 0.3) {
       profile.style = 'technical';
     } else if (profile.emotionalDensity > 0.3) {
@@ -551,6 +735,8 @@ class CommunicationAnalyzer {
       profile.style = 'minimalist';
     } else if (profile.averageMessageLength > 150) {
       profile.style = 'verbose';
+    } else if (profile.profanityLevel > 0.3) {
+      profile.style = 'street';
     } else if (profile.slangDensity > 0.1 && profile.technicalDensity > 0.1) {
       profile.style = 'mixed';
     } else {
@@ -565,9 +751,17 @@ class CommunicationAnalyzer {
       profile.preferredResponseLength = 'medium';
     } else if (profile.averageMessageLength < 300) {
       profile.preferredResponseLength = 'long';
-    } else {
+    } else if (profile.averageMessageLength < 500) {
       profile.preferredResponseLength = 'very-long';
+    } else {
+      profile.preferredResponseLength = 'comprehensive';
     }
+
+    const messagingSpeed = recentMessages.length / Math.max(recentMessages.join('').length / 100, 1);
+    if (messagingSpeed > 5) profile.communicationSpeed = 'rapid';
+    else if (messagingSpeed > 3) profile.communicationSpeed = 'fast';
+    else if (messagingSpeed < 1) profile.communicationSpeed = 'slow';
+    else profile.communicationSpeed = 'normal';
 
     return profile;
   }
@@ -584,6 +778,10 @@ class CodeContextAnalyzer {
       hasErrors: false,
       needsContinuation: false,
       codeQuality: 'intermediate',
+      errorTypes: [],
+      complexity: 'simple',
+      hasTests: false,
+      hasTypeErrors: false,
     };
 
     const recentContent = [...messages.slice(-10), { content: currentInput, role: 'user' }]
@@ -595,10 +793,10 @@ class CodeContextAnalyzer {
     if (!context.isActive) return context;
 
     const languagePatterns: Record<string, RegExp> = {
-      'typescript': /typescript|\.tsx?|interface\s|type\s.*=/i,
+      'typescript': /typescript|\.tsx?|interface\s|type\s.*=|as\s|<.*>/i,
       'javascript': /javascript|\.jsx?|function\s|const\s|let\s|var\s/i,
       'python': /python|\.py|def\s|class\s.*:|import\s.*from|django|flask/i,
-      'rust': /rust|\.rs|fn\s|impl\s|trait\s|pub\s/i,
+      'rust': /rust|\.rs|fn\s|impl\s|trait\s|pub\s|match\s/i,
       'go': /golang?|\.go|func\s|package\s|type\s.*struct/i,
       'java': /java(?!script)|\.java|public\s*class|private\s|protected\s/i,
       'c++': /c\+\+|cpp|\.cpp|#include|std::|template\s*</i,
@@ -624,12 +822,14 @@ class CodeContextAnalyzer {
       'angular': /angular|@Component|@Injectable|ngOnInit/i,
       'svelte': /svelte|\.svelte|<script>.*<\/script>/i,
       'next.js': /next\.?js|getServerSideProps|getStaticProps/i,
+      'nuxt': /nuxt|nuxtServerInit|asyncData/i,
       'express': /express|app\.get|app\.post|router\./i,
       'django': /django|models\.Model|views\.|urls\.py/i,
       'flask': /flask|@app\.route|render_template/i,
       'fastapi': /fastapi|@app\.get|@app\.post|APIRouter/i,
       'tailwind': /tailwind|className=["'].*\s/i,
       'bootstrap': /bootstrap|class=["'].*col-|btn-/i,
+      'nest.js': /nest\.?js|@Injectable|@Controller|@Module/i,
     };
 
     for (const [framework, pattern] of Object.entries(frameworkPatterns)) {
@@ -639,7 +839,7 @@ class CodeContextAnalyzer {
     }
 
     const patternMarkers: Record<string, RegExp> = {
-      'hooks': /use[A-Z]\w+|useState|useEffect|useContext|useMemo/,
+      'hooks': /use[A-Z]\w+|useState|useEffect|useContext|useMemo|useCallback/,
       'async': /async|await|Promise|then\(|catch\(/,
       'classes': /class\s+\w+|extends\s+\w+|constructor\(/,
       'functional': /function\s+\w+|const\s+\w+\s*=.*=>/,
@@ -649,6 +849,8 @@ class CodeContextAnalyzer {
       'routing': /router|Route|Link|navigate|redirect/,
       'forms': /form|input|onChange|onSubmit|validation/,
       'styling': /styled|css|className|style=/,
+      'error-handling': /try|catch|throw|error|Error/,
+      'testing': /test|describe|it\(|expect|jest|vitest/,
     };
 
     for (const [pattern, regex] of Object.entries(patternMarkers)) {
@@ -663,7 +865,26 @@ class CodeContextAnalyzer {
       context.lastCodeLength = lastCodeBlock.length;
     }
 
-    context.hasErrors = /ошибк|error|баг|bug|не\s*работает|broken|failed|exception/i.test(recentContent);
+    const errorPatterns = {
+      syntax: /SyntaxError|unexpected token|parsing error/i,
+      type: /TypeError|type.*error|cannot read property/i,
+      reference: /ReferenceError|is not defined|undefined/i,
+      network: /NetworkError|fetch failed|CORS/i,
+      runtime: /RuntimeError|null pointer|segmentation fault/i,
+    };
+
+    for (const [errorType, pattern] of Object.entries(errorPatterns)) {
+      if (pattern.test(recentContent)) {
+        context.errorTypes.push(errorType);
+        context.hasErrors = true;
+      }
+    }
+
+    if (/type\s*error|cannot find name|property.*does not exist/i.test(recentContent)) {
+      context.hasTypeErrors = true;
+    }
+
+    context.hasErrors = context.hasErrors || /ошибк|error|баг|bug|не\s*работает|broken|failed|exception/i.test(recentContent);
 
     const hasFullRequest = /полностью|целиком|весь|не\s*обрывай|complete|full|entire/i.test(currentInput);
     const isLongCode = context.lastCodeLength > 1500;
@@ -671,14 +892,35 @@ class CodeContextAnalyzer {
 
     const qualityMarkers = {
       beginner: /var\s|console\.log|alert\(|document\.write/,
-      advanced: /interface\s|type\s|generic|abstract|async.*await|Promise\.all/,
+      intermediate: /const|let|arrow.*function|async.*await/,
+      advanced: /interface\s|type\s|generic|abstract|Promise\.all|design.*pattern/,
+      expert: /dependency.*injection|architecture|microservice|event.*driven/,
     };
 
-    if (qualityMarkers.advanced.test(recentContent)) {
+    if (qualityMarkers.expert.test(recentContent)) {
+      context.codeQuality = 'expert';
+    } else if (qualityMarkers.advanced.test(recentContent)) {
       context.codeQuality = 'advanced';
     } else if (qualityMarkers.beginner.test(recentContent)) {
       context.codeQuality = 'beginner';
     }
+
+    const complexityMarkers = {
+      simple: /function|if|for|while/,
+      moderate: /class|interface|async|Promise/,
+      complex: /generic|abstract|decorator|factory|singleton/,
+      architectural: /microservice|event.*driven|cqrs|ddd|hexagonal/,
+    };
+
+    if (complexityMarkers.architectural.test(recentContent)) {
+      context.complexity = 'architectural';
+    } else if (complexityMarkers.complex.test(recentContent)) {
+      context.complexity = 'complex';
+    } else if (complexityMarkers.moderate.test(recentContent)) {
+      context.complexity = 'moderate';
+    }
+
+    context.hasTests = /test|describe|it\(|expect|jest|vitest|mocha|chai/i.test(recentContent);
 
     return context;
   }
@@ -692,6 +934,8 @@ class TopicGraphBuilder {
       expertise: new Map(),
       transitions: new Map(),
       depth: new Map(),
+      categories: new Map(),
+      temporalPattern: 'consistent',
     };
 
     const lower = currentInput.toLowerCase();
@@ -719,6 +963,8 @@ class TopicGraphBuilder {
       'philosophy': /философ|этик|мораль|philosophy|existential/i,
       'business': /бизнес|стартап|маркетинг|business|startup|sales/i,
       'career': /карьер|работ|вакансия|резюме|career|job|interview/i,
+      'health': /здоров|фитнес|спорт|диет|health|fitness|workout/i,
+      'personal': /личн|отношен|жизн|personal|relationship|life/i,
     };
 
     for (const [topic, pattern] of Object.entries(topicPatterns)) {
@@ -744,6 +990,32 @@ class TopicGraphBuilder {
     graph.current = topics;
     graph.recent = [...new Set([...topics, ...graph.recent])].slice(0, 20);
 
+    const categoryMap: Record<string, string[]> = {
+      'tech': ['frontend', 'backend', 'mobile', 'databases', 'devops', 'ai-ml', 'security', 'testing'],
+      'creative': ['design', 'music', 'movies', 'gaming', 'anime'],
+      'knowledge': ['science', 'math', 'philosophy'],
+      'professional': ['business', 'career'],
+      'personal': ['health', 'personal', 'social'],
+    };
+
+    for (const [category, categoryTopics] of Object.entries(categoryMap)) {
+      const matchedTopics = topics.filter(t => categoryTopics.includes(t));
+      if (matchedTopics.length > 0) {
+        graph.categories.set(category, matchedTopics);
+      }
+    }
+
+    const recentTopicSet = new Set(graph.recent);
+    if (recentTopicSet.size === 1) {
+      graph.temporalPattern = 'focused';
+    } else if (recentTopicSet.size > 10) {
+      graph.temporalPattern = 'scattered';
+    } else if (recentTopicSet.size > 5) {
+      graph.temporalPattern = 'exploratory';
+    } else {
+      graph.temporalPattern = 'consistent';
+    }
+
     return graph;
   }
 }
@@ -758,6 +1030,9 @@ class BehaviorPatternAnalyzer {
       consistency: 0.5,
       learningCurve: 0.5,
       problemSolvingApproach: 'ask-first',
+      frustrationTolerance: 0.5,
+      independenceLevel: 0.5,
+      clarityOfGoals: 0.5,
     };
 
     if (/^(тест|проверка|ты\s*тут|работаешь|алло|эй|\.+)$/i.test(input.trim())) {
@@ -769,11 +1044,13 @@ class BehaviorPatternAnalyzer {
     if (/(напиши|создай|сделай|реализуй).*код/.test(lower)) {
       pattern.type = 'working';
       pattern.engagement = 0.8;
+      pattern.clarityOfGoals = 0.7;
     }
 
     if (/(объясни|расскажи|как\s*работает|что\s*такое|почему)/.test(lower)) {
       pattern.type = 'learning';
       pattern.engagement = 0.7;
+      pattern.learningCurve = 0.6;
     }
 
     if (/(ошибк|баг|не\s*работает|почини|исправь)/.test(lower)) {
@@ -785,6 +1062,7 @@ class BehaviorPatternAnalyzer {
     if (/(устал|грустно|бесит|заебало|плохо)/.test(lower)) {
       pattern.type = 'venting';
       pattern.engagement = 0.6;
+      pattern.frustrationTolerance = 0.2;
     }
 
     if (/(привет|как\s*дела|чем\s*заним|пошути)/.test(lower)) {
@@ -801,6 +1079,18 @@ class BehaviorPatternAnalyzer {
       pattern.type = 'researching';
       pattern.engagement = 0.8;
       pattern.problemSolvingApproach = 'research-first';
+    }
+
+    if (/(прокрастинир|откладыва|не\s*хочется|лень)/.test(lower)) {
+      pattern.type = 'procrastinating';
+      pattern.engagement = 0.4;
+      pattern.clarityOfGoals = 0.3;
+    }
+
+    if (/(не\s*понимаю|запутал|сложно|трудно)/.test(lower)) {
+      pattern.type = 'struggling';
+      pattern.engagement = 0.7;
+      pattern.frustrationTolerance = 0.4;
     }
 
     const userMessages = messages.filter(m => m.role === 'user');
@@ -825,6 +1115,32 @@ class BehaviorPatternAnalyzer {
 
     pattern.engagement = Math.min(1, (messages.length / 20) * 0.5 + pattern.engagement * 0.5);
 
+    const hasDetailedQuestions = /как\s*именно|подробно|детально|поэтапно|step.*by.*step/.test(lower);
+    const hasVagueQuestions = /как-то|что-нибудь|типа|вроде/.test(lower);
+    
+    if (hasDetailedQuestions) {
+      pattern.clarityOfGoals = 0.8;
+      pattern.problemSolvingApproach = 'systematic';
+    } else if (hasVagueQuestions) {
+      pattern.clarityOfGoals = 0.3;
+      pattern.problemSolvingApproach = 'chaotic';
+    }
+
+    const frustrationIndicators = ['блять', 'нахуй', 'заебало', 'не\s*работает', 'опять'];
+    const frustrationCount = frustrationIndicators.filter(term => new RegExp(term, 'i').test(lower)).length;
+    pattern.frustrationTolerance = Math.max(0, 1 - (frustrationCount * 0.2));
+
+    const independenceIndicators = /(сам.*попробовал|уже\s*пытался|пробовал.*так|tried.*this)/i;
+    const dependenceIndicators = /(как\s*мне|что\s*делать|помоги|сделай\s*за)/i;
+
+    if (independenceIndicators.test(lower)) {
+      pattern.independenceLevel = 0.7;
+      pattern.problemSolvingApproach = 'trial-error';
+    } else if (dependenceIndicators.test(lower)) {
+      pattern.independenceLevel = 0.3;
+      pattern.problemSolvingApproach = 'ask-first';
+    }
+
     return pattern;
   }
 }
@@ -838,6 +1154,8 @@ class ConversationDynamicsAnalyzer {
       turnsPerTopic: 0,
       averageResponseTime: 0,
       interactionQuality: 0.5,
+      emotionalTrajectory: 'stable',
+      engagementTrend: 'plateau',
     };
 
     if (messages.length < 4) {
@@ -887,6 +1205,36 @@ class ConversationDynamicsAnalyzer {
       dynamics.topicStability * 0.3
     );
 
+    if (userMessages.length >= 5) {
+      const recentEmotions = userMessages.slice(-5).map(msg => {
+        const lower = msg.toLowerCase();
+        if (/(круто|класс|супер|збс|топ)/.test(lower)) return 1;
+        if (/(плохо|хреново|бесит|заебало)/.test(lower)) return -1;
+        return 0;
+      });
+
+      const emotionalSum = recentEmotions.reduce((a, b) => a + b, 0);
+      const emotionalTrend = emotionalSum / recentEmotions.length;
+
+      if (emotionalTrend > 0.3) dynamics.emotionalTrajectory = 'improving';
+      else if (emotionalTrend < -0.3) dynamics.emotionalTrajectory = 'declining';
+      else if (Math.max(...recentEmotions) - Math.min(...recentEmotions) > 1.5) dynamics.emotionalTrajectory = 'volatile';
+      else dynamics.emotionalTrajectory = 'stable';
+    }
+
+    if (messageLengths.length >= 5) {
+      const early = messageLengths.slice(0, Math.floor(messageLengths.length / 2));
+      const late = messageLengths.slice(Math.floor(messageLengths.length / 2));
+      
+      const earlyAvg = early.reduce((a, b) => a + b, 0) / early.length;
+      const lateAvg = late.reduce((a, b) => a + b, 0) / late.length;
+
+      if (lateAvg > earlyAvg * 1.2) dynamics.engagementTrend = 'increasing';
+      else if (lateAvg < earlyAvg * 0.8) dynamics.engagementTrend = 'decreasing';
+      else if (Math.abs(lateAvg - earlyAvg) < earlyAvg * 0.1) dynamics.engagementTrend = 'plateau';
+      else dynamics.engagementTrend = 'fluctuating';
+    }
+
     return dynamics;
   }
 }
@@ -903,6 +1251,7 @@ class DeepContextEngine {
   private previousMode?: ResponseMode;
   private previousRudeness?: RudenessMode;
   private persistentMemory: DeepContext | null = null;
+  private sessionStartTime: number = Date.now();
 
   analyze(messages: Message[], currentInput: string, mode: ResponseMode, rudeness: RudenessMode): DeepContext {
     const userMessages = messages.filter(m => m.role === 'user');
@@ -934,6 +1283,10 @@ class DeepContextEngine {
       intent
     );
 
+    const culturalContext = this.detectCulturalContext(currentInput);
+    const timeContext = this.detectTimeContext();
+    const sessionDuration = (Date.now() - this.sessionStartTime) / 1000;
+
     const context: DeepContext = {
       messageCount: userMessages.length,
       intent,
@@ -951,6 +1304,9 @@ class DeepContextEngine {
       lastAssistantMessages: lastAssistantMsgs,
       detectedProblems: this.detectProblems(currentInput, allMessages),
       userPreferences: this.persistentMemory?.userPreferences || new Map(),
+      culturalContext,
+      timeContext,
+      sessionDuration,
     };
 
     context.dynamics = this.dynamicsAnalyzer.analyze(allMessages, context);
@@ -998,9 +1354,17 @@ class DeepContextEngine {
 
     const recentContent = messages.slice(-15).map(m => m.content || '').join(' ').toLowerCase();
     
+    const profoundTerms = (recentContent.match(
+      /смысл|суть|философ|экзистенц|сознание|бытие|предназначение|душа|вечност|истин/g
+    ) || []).length;
+
     const complexTermsCount = (recentContent.match(
       /архитектур|паттерн|оптимизац|алгоритм|сложност|рефакторинг|абстракц|инкапсуляц|полиморфизм|наследовани|микросервис|масштабируем|производительност/g
     ) || []).length;
+
+    if (count > 50 && avgTopicDepth > 12 && (complexTermsCount > 15 || profoundTerms > 5)) {
+      return 'profound';
+    }
 
     if (count > 30 && avgTopicDepth > 8 && complexTermsCount > 10) {
       return 'intimate';
@@ -1048,6 +1412,14 @@ class DeepContextEngine {
       problems.push('incomplete-code');
     }
 
+    if (/(повтор|снова.*то\s*же|опять.*одно|already.*said)/.test(lower)) {
+      problems.push('repetitive-response');
+    }
+
+    if (/(не\s*то|не\s*совсем|не\s*так|wrong)/.test(lower)) {
+      problems.push('incorrect-response');
+    }
+
     return problems;
   }
 
@@ -1069,12 +1441,57 @@ class DeepContextEngine {
     if (context.emotional.primary !== 'neutral') {
       context.memory.set('last-emotion', context.emotional.primary);
     }
+
+    if (context.code.frameworks.length > 0) {
+      const frameworks = context.userPreferences.get('frameworks') || [];
+      context.code.frameworks.forEach(fw => {
+        if (!frameworks.includes(fw)) frameworks.push(fw);
+      });
+      context.userPreferences.set('frameworks', frameworks.slice(-5));
+    }
+
+    context.memory.set('last-input-length', input.length);
+    context.memory.set('message-count', context.messageCount);
+  }
+
+  private detectCulturalContext(input: string): string[] {
+    const context: string[] = [];
+    const lower = input.toLowerCase();
+
+    const culturalMarkers: Record<string, RegExp> = {
+      'gen-z': /рил|кринж|база|вайб|флекс|чил|скибиди|ризз|sigma|brainrot/i,
+      'meme-culture': /кек|лол|рофл|пепе|wojak|chad|virgin|based/i,
+      'anime-culture': /аниме|манга|ван.*пис|наруто|вайфу|senpai/i,
+      'gaming': /скилл|лвл|gg|ez|noob|pro|gamer|геймер/i,
+      'tech-bro': /стартап|unicorn|scaling|mvp|agile|scrum/i,
+      'russian-internet': /азаза|кекв|шикарн|збс|пхп|норм|ясн/i,
+    };
+
+    for (const [culture, pattern] of Object.entries(culturalMarkers)) {
+      if (pattern.test(lower)) {
+        context.push(culture);
+      }
+    }
+
+    return context;
+  }
+
+  private detectTimeContext(): DeepContext['timeContext'] {
+    const hour = new Date().getHours();
+    
+    if (hour >= 5 && hour < 12) return 'morning';
+    if (hour >= 12 && hour < 18) return 'day';
+    if (hour >= 18 && hour < 23) return 'evening';
+    if (hour >= 23 || hour < 5) return 'night';
+    
+    return 'unknown';
   }
 
   reset(): void {
     this.previousMode = undefined;
     this.previousRudeness = undefined;
     this.persistentMemory = null;
+    this.sessionStartTime = Date.now();
   }
 }
 
@@ -1148,13 +1565,13 @@ class MasterPromptArchitect {
     let identity = baseIdentities[rudeness];
 
     if (mode === 'code') {
-      identity += '\n\n🔥 КОД-РЕЖИМ: Генерируешь ТОЛЬКО чистый код. Никакого текста вокруг. Код полный, рабочий, готовый к использованию.';
+      identity += '\n\nКОД-РЕЖИМ: Генерируешь ТОЛЬКО чистый код. Никакого текста вокруг. Код полный, рабочий, готовый к использованию.';
     } else if (mode === 'visual') {
-      identity += '\n\n🎨 ВИЗУАЛ-РЕЖИМ: React компоненты уровня 2025-2026. TypeScript + Tailwind + анимации. Дизайн топовый, код чистый.';
+      identity += '\n\nВИЗУАЛ-РЕЖИМ: React компоненты уровня 2025-2026. TypeScript + Tailwind + анимации. Дизайн топовый, код чистый.';
     }
 
-    if (context.conversationDepth === 'expert' || context.conversationDepth === 'intimate') {
-      identity += '\n\n💎 ГЛУБОКИЙ РАЗГОВОР: Вы давно общаетесь. Можешь быть более неформальным, помнишь контекст.';
+    if (context.conversationDepth === 'expert' || context.conversationDepth === 'intimate' || context.conversationDepth === 'profound') {
+      identity += '\n\nГЛУБОКИЙ РАЗГОВОР: Вы давно общаетесь. Можешь быть более неформальным, помнишь контекст.';
     }
 
     return identity;
@@ -1187,49 +1604,56 @@ class MasterPromptArchitect {
       polite: `СТИЛЬ ОБЩЕНИЯ:
 • Тон: дружелюбный, профессиональный, естественный
 • Юмор: умный, тонкий, уместный
-• Мат: исключён (можно: фиг, чёрт, блин, ёлки)
-• Эмодзи: НЕ используешь (кроме кода где они часть UI)
+• Мат: исключён полностью
+• Эмодзи: НЕ используешь
 • Подход: помогаю качественно и с уважением`,
 
       rude: `СТИЛЬ ОБЩЕНИЯ:
 • Тон: уверенный, прямой, с сарказмом
 • Юмор: острый, дерзкий, современный
-• Мат: умеренно, для усиления (не в каждой фразе)
+• Мат: умеренно, для усиления эмоций и смысла
 • Эмодзи: НЕ используешь
 • Подход: помогаю эффективно, без церемоний`,
 
       very_rude: `СТИЛЬ ОБЩЕНИЯ:
 • Тон: грубый, без фильтров, циничный
 • Юмор: чёрный, токсичный, жёсткий
-• Мат: свободно, это нормальная речь
-• Эмодзи: НЕ используешь (это для пидоров)
-• Подход: грубо, но профессионально`,
+• Мат: свободно и часто, это нормальная речь
+• Эмодзи: НЕ используешь никогда
+• Подход: грубо, но профессионально и по делу`,
     };
 
     let style = baseStyles[rudeness];
 
     const emotionalAdaptations = {
-      frustrated: '\n\n⚡ ПОЛЬЗОВАТЕЛЬ ФРУСТРИРОВАН: Помоги быстро и конкретно. Без воды, сразу решение.',
-      excited: '\n\n🔥 ПОЛЬЗОВАТЕЛЬ В ХАЙПЕ: Разделяй энергию, будь живым и активным.',
-      angry: '\n\n😤 ПОЛЬЗОВАТЕЛЬ ЗОЛ: Не провоцируй. Помоги решить проблему быстро.',
-      tired: '\n\n😮‍💨 ПОЛЬЗОВАТЕЛЬ УСТАЛ: Будь понимающим, не груди лишним.',
-      confused: '\n\n🤔 ПОЛЬЗОВАТЕЛЬ В ЗАМЕШАТЕЛЬСТВЕ: Объясняй просто, структурированно, понятно.',
-      desperate: '\n\n🆘 ПОЛЬЗОВАТЕЛЬ В ОТЧАЯНИИ: Помоги срочно, конкретно, без лишних слов.',
-      playful: '\n\n😄 ИГРИВОЕ НАСТРОЕНИЕ: Можешь шутить, быть более расслабленным.',
-      positive: '\n\n✨ ПОЗИТИВ: Поддерживай хорошее настроение.',
-      negative: '\n\n😔 НЕГАТИВ: Будь поддерживающим, но не навязчивым.',
+      frustrated: '\n\nПОЛЬЗОВАТЕЛЬ ФРУСТРИРОВАН: Помоги быстро и конкретно. Без воды, сразу решение.',
+      excited: '\n\nПОЛЬЗОВАТЕЛЬ В ХАЙПЕ: Разделяй энергию, будь живым и активным.',
+      angry: '\n\nПОЛЬЗОВАТЕЛЬ ЗОЛ: Не провоцируй. Помоги решить проблему быстро.',
+      tired: '\n\nПОЛЬЗОВАТЕЛЬ УСТАЛ: Будь понимающим, не груди лишним.',
+      confused: '\n\nПОЛЬЗОВАТЕЛЬ В ЗАМЕШАТЕЛЬСТВЕ: Объясняй просто, структурированно, понятно.',
+      desperate: '\n\nПОЛЬЗОВАТЕЛЬ В ОТЧАЯНИИ: Помоги срочно, конкретно, без лишних слов.',
+      playful: '\n\nИГРИВОЕ НАСТРОЕНИЕ: Можешь шутить, быть более расслабленным.',
+      positive: '\n\nПОЗИТИВ: Поддерживай хорошее настроение.',
+      negative: '\n\nНЕГАТИВ: Будь поддерживающим, но не навязчивым.',
+      sarcastic: '\n\nСАРКАЗМ ОБНАРУЖЕН: Можешь ответить в том же ключе.',
+      melancholic: '\n\nМЕЛАНХОЛИЯ: Будь мягче и понимающее.',
+      anxious: '\n\nТРЕВОЖНОСТЬ: Успокаивай, давай уверенность.',
+      euphoric: '\n\nЭЙФОРИЯ: Разделяй радость, но оставайся адекватным.',
       neutral: '',
     };
 
     style += emotionalAdaptations[context.emotional.primary];
 
     const communicationAdaptations = {
-      slang: '\n\n🗣️ ПОЛЬЗОВАТЕЛЬ ИСПОЛЬЗУЕТ СЛЕНГ: Отвечай на одной волне, юзай современный сленг.',
-      formal: '\n\n🎩 ФОРМАЛЬНОЕ ОБЩЕНИЕ: Будь чуть сдержаннее, но не роботом.',
-      technical: '\n\n💻 ТЕХНИЧЕСКИЙ КОНТЕКСТ: Точность и профессионализм — приоритет.',
-      emotional: '\n\n❤️ ЭМОЦИОНАЛЬНОЕ ОБЩЕНИЕ: Покажи эмпатию и понимание.',
-      minimalist: '\n\n📝 МИНИМАЛИСТ: Пользователь пишет мало — отвечай кратко.',
-      verbose: '\n\n📚 РАЗВЁРНУТЫЙ СТИЛЬ: Пользователь любит детали — давай полные ответы.',
+      slang: '\n\nПОЛЬЗОВАТЕЛЬ ИСПОЛЬЗУЕТ СЛЕНГ: Отвечай на одной волне, юзай современный сленг.',
+      formal: '\n\nФОРМАЛЬНОЕ ОБЩЕНИЕ: Будь чуть сдержаннее, но не роботом.',
+      technical: '\n\nТЕХНИЧЕСКИЙ КОНТЕКСТ: Точность и профессионализм — приоритет.',
+      emotional: '\n\nЭМОЦИОНАЛЬНОЕ ОБЩЕНИЕ: Покажи эмпатию и понимание.',
+      minimalist: '\n\nМИНИМАЛИСТ: Пользователь пишет мало — отвечай кратко.',
+      verbose: '\n\nРАЗВЁРНУТЫЙ СТИЛЬ: Пользователь любит детали — давай полные ответы.',
+      academic: '\n\nАКАДЕМИЧЕСКИЙ СТИЛЬ: Структурированно, обоснованно, профессионально.',
+      street: '\n\nУЛИЧНЫЙ СТИЛЬ: Простой язык, без соплей, прямо по делу.',
+      meme: '\n\nМЕМНЫЙ СТИЛЬ: Юзай современные мемы и сленг, будь в тренде.',
       casual: '',
       mixed: '',
     };
@@ -1237,13 +1661,15 @@ class MasterPromptArchitect {
     style += communicationAdaptations[context.communication.style];
 
     if (context.emotional.sarcasm) {
-      style += '\n\n😏 ОБНАРУЖЕН САРКАЗМ: Пользователь саркастичен — можешь ответить в том же ключе.';
+      style += '\n\nОБНАРУЖЕН САРКАЗМ: Пользователь саркастичен — можешь ответить в том же ключе.';
     }
 
-    if (context.emotional.urgency === 'critical') {
-      style += '\n\n⚠️ КРИТИЧЕСКАЯ СРОЧНОСТЬ: Ответь НЕМЕДЛЕННО и КОНКРЕТНО. Только суть.';
+    if (context.emotional.urgency === 'extreme') {
+      style += '\n\nЭКСТРЕМАЛЬНАЯ СРОЧНОСТЬ: Ответь МГНОВЕННО и МАКСИМАЛЬНО КОНКРЕТНО. Ноль воды.';
+    } else if (context.emotional.urgency === 'critical') {
+      style += '\n\nКРИТИЧЕСКАЯ СРОЧНОСТЬ: Ответь НЕМЕДЛЕННО и КОНКРЕТНО. Только суть.';
     } else if (context.emotional.urgency === 'high') {
-      style += '\n\n⏰ ВЫСОКАЯ СРОЧНОСТЬ: Быстрый и чёткий ответ. Минимум воды.';
+      style += '\n\nВЫСОКАЯ СРОЧНОСТЬ: Быстрый и чёткий ответ. Минимум воды.';
     }
 
     return style;
@@ -1261,9 +1687,9 @@ class MasterPromptArchitect {
     if (specialCase === 'empty') {
       strategy += `
 • ПУСТОЙ ВВОД: Спроси что нужно ЕСТЕСТВЕННО
-• БЕЗ шаблонов ("Слушаю", "Чем помочь")
+• БЕЗ шаблонов
 • Будь креативным, каждый раз по-разному
-• Можешь заметить пустоту (если уместно)`;
+• Можешь заметить пустоту если уместно`;
       return strategy;
     }
 
@@ -1271,11 +1697,8 @@ class MasterPromptArchitect {
       strategy += `
 • ЗАПРЕЩЁННАЯ ТЕМА: Откажи твёрдо
 • БЕЗ шаблонных отказов
-• Учитывай уровень грубости:
-  ${rudeness === 'polite' ? '- Вежливо, но твёрдо' : ''}
-  ${rudeness === 'rude' ? '- С сарказмом или прямо' : ''}
-  ${rudeness === 'very_rude' ? '- Грубо, можно послать' : ''}
-• НЕ объясняй почему (это очевидно)`;
+• Учитывай уровень грубости
+• НЕ объясняй почему это очевидно`;
       return strategy;
     }
 
@@ -1289,6 +1712,8 @@ class MasterPromptArchitect {
       creative: '• КРЕАТИВ: Будь творческим и оригинальным',
       continuation: '• ПРОДОЛЖЕНИЕ: Продолжи с точного места остановки',
       clarification: '• УТОЧНЕНИЕ: Дай больше деталей по предыдущему ответу',
+      emotional: '• ЭМОЦИИ: Поддержи, покажи эмпатию',
+      philosophical: '• ФИЛОСОФИЯ: Глубокий, вдумчивый ответ',
       statement: '• УТВЕРЖДЕНИЕ: Отреагируй уместно на сказанное',
     };
 
@@ -1311,7 +1736,11 @@ class MasterPromptArchitect {
     }
 
     if (context.intent.requiresComparison) {
-      strategy += '\n• НУЖНО СРАВНЕНИЕ: Сравни объективно, покажи плюсы/минусы';
+      strategy += '\n• НУЖНО СРАВНЕНИЕ: Сравни объективно, покажи плюсы и минусы';
+    }
+
+    if (context.intent.requiresStepByStep) {
+      strategy += '\n• НУЖНА ПОШАГОВОСТЬ: Разбей на понятные шаги';
     }
 
     strategy += '\n\nДЛИНА ОТВЕТА:';
@@ -1333,27 +1762,35 @@ class MasterPromptArchitect {
         strategy += '\n• Развёрнутый ответ — детально и полно';
       } else if (context.communication.preferredResponseLength === 'very-long') {
         strategy += '\n• Очень развёрнутый ответ — максимально подробно';
+      } else if (context.communication.preferredResponseLength === 'comprehensive') {
+        strategy += '\n• Исчерпывающий ответ — всё что нужно знать';
       }
     }
 
     if (context.hasRepeatedQuestions) {
-      strategy += '\n\n⚠️ ПОВТОР ВОПРОСА: Либо скажи что уже отвечал, либо ответь по-другому';
+      strategy += '\n\nПОВТОР ВОПРОСА: Либо скажи что уже отвечал, либо ответь по-другому';
     }
 
     if (context.justSwitchedMode) {
-      strategy += '\n\n🔄 РЕЖИМ ИЗМЕНЁН: Кратко подтверди смену режима естественно';
+      strategy += '\n\nРЕЖИМ ИЗМЕНЁН: Кратко подтверди смену режима естественно';
     }
 
     if (context.detectedProblems.includes('incomplete-code')) {
-      strategy += '\n\n🔧 ПРЕДЫДУЩИЙ КОД ОБРЫВАЛСЯ: Теперь дай код ПОЛНОСТЬЮ, БЕЗ обрывов';
+      strategy += '\n\nПРЕДЫДУЩИЙ КОД ОБРЫВАЛСЯ: Теперь дай код ПОЛНОСТЬЮ, БЕЗ обрывов';
     }
 
-    if (context.intent.complexity === 'expert') {
-      strategy += '\n\n🎓 ЭКСПЕРТНЫЙ УРОВЕНЬ: Используй продвинутые концепции, детальные объяснения';
+    if (context.intent.complexity === 'genius') {
+      strategy += '\n\nГЕНИАЛЬНЫЙ УРОВЕНЬ: Максимальная глубина, продвинутые концепции';
+    } else if (context.intent.complexity === 'expert') {
+      strategy += '\n\nЭКСПЕРТНЫЙ УРОВЕНЬ: Используй продвинутые концепции, детальные объяснения';
     } else if (context.intent.complexity === 'complex') {
-      strategy += '\n\n📚 СЛОЖНЫЙ ВОПРОС: Структурируй ответ, разбей на части';
+      strategy += '\n\nСЛОЖНЫЙ ВОПРОС: Структурируй ответ, разбей на части';
     } else if (context.intent.complexity === 'trivial') {
-      strategy += '\n\n⚡ ПРОСТОЙ ЗАПРОС: Короткий и чёткий ответ';
+      strategy += '\n\nПРОСТОЙ ЗАПРОС: Короткий и чёткий ответ';
+    }
+
+    if (context.intent.isUrgent) {
+      strategy += '\n\nСРОЧНО: Без воды, сразу к делу, максимально быстро';
     }
 
     return strategy;
@@ -1362,7 +1799,7 @@ class MasterPromptArchitect {
   private buildQualityFramework(): string {
     return `КРИТЕРИИ КАЧЕСТВА:
 
-✅ ОБЯЗАТЕЛЬНО:
+ОБЯЗАТЕЛЬНО:
 • Сразу ПО ДЕЛУ — без вступлений и воды
 • Естественность — как живой человек, не робот
 • Конкретность — факты, примеры, решения
@@ -1370,14 +1807,14 @@ class MasterPromptArchitect {
 • Адаптивность — под человека и контекст
 • Завершённость — ответ полный, не обрывается
 
-⚡ ПРИНЦИПЫ:
+ПРИНЦИПЫ:
 • Один ответ = одна цель, выполни качественно
 • Если код — то полный и рабочий
 • Если объяснение — то понятное и структурированное
 • Если креатив — то оригинальный и интересный
 • Если проблема — то конкретное решение
 
-🎯 ТОЧНОСТЬ:
+ТОЧНОСТЬ:
 • Факты проверяй внутренне
 • Технические детали — корректные
 • Современные версии — актуальные
@@ -1385,24 +1822,24 @@ class MasterPromptArchitect {
   }
 
   private buildAntiPatterns(): string {
-    return `❌ СТРОГО ЗАПРЕЩЕНО:
+    return `СТРОГО ЗАПРЕЩЕНО:
 
 ШАБЛОННЫЕ НАЧАЛА:
-• "Конечно", "Разумеется", "С удовольствием"
-• "Давай", "Итак", "Что ж"
-• "Sure", "Of course", "Certainly"
-• "Хороший/отличный/интересный вопрос"
+• Конечно, Разумеется, С удовольствием
+• Давай, Итак, Что ж
+• Sure, Of course, Certainly
+• Хороший вопрос, Отличный вопрос
 • Повтор вопроса пользователя
 
 ШАБЛОННЫЕ КОНЦОВКИ:
-• "Надеюсь помог", "Был рад помочь"
-• "Обращайся", "Есть вопросы?"
-• "Удачи", "Успехов"
-• "А у тебя как?", "А ты как думаешь?"
-• Вопросы в конце (кроме уточняющих по делу)
+• Надеюсь помог, Был рад помочь
+• Обращайся, Есть вопросы
+• Удачи, Успехов
+• А у тебя как, А ты как думаешь
+• Вопросы в конце кроме уточняющих по делу
 
 ОБЩИЕ ЗАПРЕТЫ:
-• Эмодзи в тексте (НИКОГДА, кроме кода где они часть UI/контента)
+• Эмодзи в тексте НИКОГДА
 • Повторяющиеся фразы между ответами
 • Извинения за компетентность
 • Подлизывание и лесть
@@ -1410,38 +1847,38 @@ class MasterPromptArchitect {
 • Объяснение очевидного
 
 В КОДЕ:
-• "// остальной код"
-• "// ... продолжение"
-• "// TODO"
-• "// здесь добавь"
+• остальной код
+• продолжение
+• TODO
+• здесь добавь
 • Незакрытые блоки
 • Обрывы на середине`;
   }
 
   private buildCodeExcellence(mode: ResponseMode, rudeness: RudenessMode, context: CodeContext): string {
     if (mode === 'code') {
-      return `⚡ КОД-РЕЖИМ — ЖЕЛЕЗНЫЕ ПРАВИЛА:
+      return `КОД-РЕЖИМ — ЖЕЛЕЗНЫЕ ПРАВИЛА:
 
 ФОРМАТ:
 • ТОЛЬКО код — ноль текста до, после, вокруг
-• Формат: \`\`\`язык ... \`\`\`
-• БЕЗ объяснений, БЕЗ комментариев (кроме критичных)
+• Формат: \`\`\`язык код \`\`\`
+• БЕЗ объяснений, БЕЗ комментариев кроме критичных
 
 КАЧЕСТВО:
 • КОД ПОЛНЫЙ — от первой до последней строки
 • ВСЕ импорты включены
 • ВСЕ функции реализованы
 • TypeScript strict mode
-• БЕЗ any (только unknown если нужно)
+• БЕЗ any только unknown если нужно
 • Готов к копипасте и запуску
 
 ЗАПРЕЩЕНО:
-• "// остальной код"
-• "// ... продолжение"
-• "// TODO: реализуй"
+• остальной код
+• продолжение
+• TODO реализуй
 • Обрывы и заглушки
 • Неполные компоненты
-${rudeness === 'very_rude' ? '• Ёбаные комментарии с объяснениями' : '• Лишние комментарии'}
+• Лишние комментарии
 
 ЕСЛИ БОЛЬШОЙ КОД:
 • Всё равно пиши ПОЛНОСТЬЮ
@@ -1451,29 +1888,29 @@ ${rudeness === 'very_rude' ? '• Ёбаные комментарии с объ�
     }
 
     if (mode === 'visual') {
-      return `🎨 ВИЗУАЛ-РЕЖИМ — СТАНДАРТЫ 2025-2026:
+      return `ВИЗУАЛ-РЕЖИМ — СТАНДАРТЫ 2025-2026:
 
 СТЭК:
-• React 18+ (функциональные компоненты)
-• TypeScript (строгая типизация)
-• Tailwind CSS 4 (все стили через классы)
-• Framer Motion (для анимаций)
+• React 18+ функциональные компоненты
+• TypeScript строгая типизация
+• Tailwind CSS 4 все стили через классы
+• Framer Motion для анимаций
 
 ДИЗАЙН:
-• Современные градиенты (mesh, glassmorphism)
+• Современные градиенты mesh glassmorphism
 • Backdrop blur эффекты
 • Плавные transitions и animations
 • Тени и свечения
-• Адаптивность (mobile-first)
-• Тёмная/светлая тема (если уместно)
+• Адаптивность mobile-first
+• Тёмная светлая тема если уместно
 
 КОД:
 • Полный компонент от начала до конца
 • Все импорты
 • TypeScript интерфейсы для props
-• Оптимизация (memo, useMemo где нужно)
-• Accessibility (aria-labels)
-• БЕЗ встроенных стилей (только Tailwind)
+• Оптимизация memo useMemo где нужно
+• Accessibility aria-labels
+• БЕЗ встроенных стилей только Tailwind
 
 КАЧЕСТВО:
 • Production-ready код
@@ -1482,12 +1919,12 @@ ${rudeness === 'very_rude' ? '• Ёбаные комментарии с объ�
 • БЕЗ устаревших подходов`;
     }
 
-    let codeGuidelines = `💻 РАБОТА С КОДОМ:
+    let codeGuidelines = `РАБОТА С КОДОМ:
 
 ОБЩИЕ ПРИНЦИПЫ:
 • Код всегда полный и рабочий
 • Импорты все нужные
-• Типизация строгая (TypeScript)
+• Типизация строгая TypeScript
 • Best practices актуальные
 • Комментарии минимальные
 • Naming понятный
@@ -1507,20 +1944,41 @@ ${rudeness === 'very_rude' ? '• Ёбаные комментарии с объ�
     }
 
     if (context.hasErrors) {
-      codeGuidelines += `\n\n🐛 ОБНАРУЖЕНЫ ОШИБКИ: Помоги исправить конкретно и быстро`;
+      codeGuidelines += `\n\nОБНАРУЖЕНЫ ОШИБКИ: Помоги исправить конкретно и быстро`;
+      if (context.errorTypes.length > 0) {
+        codeGuidelines += `\n• Типы ошибок: ${context.errorTypes.join(', ')}`;
+      }
+    }
+
+    if (context.hasTypeErrors) {
+      codeGuidelines += `\n\nОШИБКИ ТИПИЗАЦИИ: Исправь типы корректно`;
     }
 
     if (context.needsContinuation) {
-      codeGuidelines += `\n\n➡️ НУЖНО ПРОДОЛЖЕНИЕ: Продолжи код с точного места остановки`;
+      codeGuidelines += `\n\nНУЖНО ПРОДОЛЖЕНИЕ: Продолжи код с точного места остановки`;
     }
 
     const qualityLevels = {
-      beginner: '\n\n📚 УРОВЕНЬ: Начинающий — объясняй базовые концепции',
-      intermediate: '\n\n💼 УРОВЕНЬ: Средний — стандартные best practices',
-      advanced: '\n\n🎓 УРОВЕНЬ: Продвинутый — используй продвинутые паттерны',
+      beginner: '\n\nУРОВЕНЬ: Начинающий — объясняй базовые концепции',
+      intermediate: '\n\nУРОВЕНЬ: Средний — стандартные best practices',
+      advanced: '\n\nУРОВЕНЬ: Продвинутый — используй продвинутые паттерны',
+      expert: '\n\nУРОВЕНЬ: Эксперт — архитектурные решения высшего уровня',
     };
 
     codeGuidelines += qualityLevels[context.codeQuality];
+
+    const complexityLevels = {
+      simple: '\n• Сложность: простая — чистый понятный код',
+      moderate: '\n• Сложность: умеренная — хорошая архитектура',
+      complex: '\n• Сложность: высокая — продвинутые паттерны',
+      architectural: '\n• Сложность: архитектурная — системное проектирование',
+    };
+
+    codeGuidelines += complexityLevels[context.complexity];
+
+    if (context.hasTests) {
+      codeGuidelines += '\n\nТЕСТЫ ОБНАРУЖЕНЫ: Учитывай тестовое покрытие';
+    }
 
     return codeGuidelines;
   }
@@ -1532,23 +1990,20 @@ ${rudeness === 'very_rude' ? '• Ёбаные комментарии с объ�
     context: DeepContext
   ): string {
     if (specialCase === 'empty') {
-      return `🔸 ОБРАБОТКА ПУСТОГО ВВОДА:
+      return `ОБРАБОТКА ПУСТОГО ВВОДА:
 
-СИТУАЦИЯ: Пользователь отправил пустое/бессмысленное сообщение
+СИТУАЦИЯ: Пользователь отправил пустое или бессмысленное сообщение
 
 ТВОЯ ЗАДАЧА:
 • Спроси что нужно ЕСТЕСТВЕННО и УНИКАЛЬНО
-• БЕЗ шаблонов типа:
-  ❌ "Слушаю", "Чем помочь?"
-  ❌ "Что интересует?", "Что нужно?"
-  ❌ "How can I help?"
+• БЕЗ шаблонов типа Слушаю Чем помочь
 • Будь креативным — каждый раз ПО-РАЗНОМУ
-• Можешь заметить пустоту (если уместно по стилю)
+• Можешь заметить пустоту если уместно по стилю
 
-ПРИМЕРЫ ПОДХОДА (НЕ копируй, придумай своё):
+ПРИМЕРЫ ПОДХОДА НЕ копируй придумай своё:
 ${rudeness === 'polite' ? '• Можешь мягко заметить пустоту и предложить помощь своими словами' : ''}
 ${rudeness === 'rude' ? '• Можешь саркастично прокомментировать пустое сообщение' : ''}
-${rudeness === 'very_rude' ? '• Можешь грубо, но с юмором отреагировать на пустоту' : ''}
+${rudeness === 'very_rude' ? '• Можешь грубо но с юмором отреагировать на пустоту' : ''}
 
 ГЕНЕРИРУЙ СВОЙ УНИКАЛЬНЫЙ ОТВЕТ.`;
     }
@@ -1556,30 +2011,33 @@ ${rudeness === 'very_rude' ? '• Можешь грубо, но с юмором 
     if (specialCase === 'forbidden') {
       const forbiddenTopic = this.detectForbiddenCategory(userInput);
       
-      return `🚫 ЗАПРЕЩЁННАЯ ТЕМА: ${forbiddenTopic}
+      return `ЗАПРЕЩЁННАЯ ТЕМА: ${forbiddenTopic}
 
 ПОЛНЫЙ СПИСОК ЗАПРЕТОВ:
-• Наркотики, их производство и распространение
-• Азартные игры, казино, букмекеры, ставки
-• Взлом, хакинг, вредоносное ПО
+• Наркотики их производство и распространение
+• Азартные игры казино букмекеры ставки
+• Взлом хакинг вредоносное ПО
 • Даркнет для криминальных целей
-• Насилие, убийства, причинение вреда
+• Насилие убийства причинение вреда
 • Незаконный контент любого рода
 • Подделка документов
 • Любые криминальные действия
+• Торговля людьми
+• Сексуальное насилие
+• Терроризм
 
 ТВОЯ ЗАДАЧА:
 • Откажи помогать с этой темой
 • БЕЗ шаблонных фраз — УНИКАЛЬНЫЙ отказ
 • Учитывай грубость:
-  ${rudeness === 'polite' ? '- Вежливо, но твёрдо и категорично' : ''}
+  ${rudeness === 'polite' ? '- Вежливо но твёрдо и категорично' : ''}
   ${rudeness === 'rude' ? '- С сарказмом или прямо в лоб' : ''}
-  ${rudeness === 'very_rude' ? '- Грубо, можешь послать нахуй' : ''}
-• НЕ объясняй детально почему (это понятно)
+  ${rudeness === 'very_rude' ? '- Грубо можешь послать нахуй' : ''}
+• НЕ объясняй детально почему это понятно
 • НЕ читай мораль
-• Можешь предложить легальную альтернативу (опционально)
+• Можешь предложить легальную альтернативу опционально
 
-ГЕНЕРИРУЙ СВОЙ ОТКАЗ, каждый раз разный.`;
+ГЕНЕРИРУЙ СВОЙ ОТКАЗ каждый раз разный.`;
     }
 
     return '';
@@ -1589,7 +2047,7 @@ ${rudeness === 'very_rude' ? '• Можешь грубо, но с юмором 
     const constraints: string[] = ['КОНТЕКСТНЫЕ ОГРАНИЧЕНИЯ:'];
 
     if (mode === 'code' || mode === 'visual') {
-      constraints.push('• ТОЛЬКО КОД — никакого текста вокруг (это критично!)');
+      constraints.push('• ТОЛЬКО КОД — никакого текста вокруг это критично');
     }
 
     if (context.conversationDepth === 'greeting') {
@@ -1610,6 +2068,40 @@ ${rudeness === 'very_rude' ? '• Можешь грубо, но с юмором 
 
     if (context.memory.has('preferred-language')) {
       constraints.push(`• ПРЕДПОЧИТАЕМЫЙ ЯЗЫК: ${context.memory.get('preferred-language')}`);
+    }
+
+    if (context.culturalContext.length > 0) {
+      constraints.push(`• КУЛЬТУРНЫЙ КОНТЕКСТ: ${context.culturalContext.join(', ')}`);
+    }
+
+    if (context.timeContext !== 'unknown') {
+      const timeMessages = {
+        morning: 'сейчас утро — учитывай',
+        day: 'сейчас день — учитывай',
+        evening: 'сейчас вечер — учитывай',
+        night: 'сейчас ночь — учитывай',
+      };
+      constraints.push(`• ВРЕМЯ СУТОК: ${timeMessages[context.timeContext]}`);
+    }
+
+    if (context.sessionDuration > 3600) {
+      constraints.push('• ДОЛГАЯ СЕССИЯ: Пользователь давно на сайте');
+    }
+
+    if (context.behavior.frustrationTolerance < 0.3) {
+      constraints.push('• НИЗКАЯ ТОЛЕРАНТНОСТЬ К ФРУСТРАЦИИ: Будь особенно точным');
+    }
+
+    if (context.behavior.clarityOfGoals < 0.4) {
+      constraints.push('• НЕЧЁТКИЕ ЦЕЛИ: Помоги сформулировать задачу');
+    }
+
+    if (context.dynamics.emotionalTrajectory === 'declining') {
+      constraints.push('• ЭМОЦИИ УХУДШАЮТСЯ: Постарайся улучшить настроение');
+    }
+
+    if (context.detectedProblems.length > 0) {
+      constraints.push(`• ОБНАРУЖЕНЫ ПРОБЛЕМЫ: ${context.detectedProblems.join(', ')}`);
     }
 
     return constraints.join('\n');
@@ -1638,6 +2130,15 @@ ${rudeness === 'very_rude' ? '• Можешь грубо, но с юмором 
     }
     if (/поддельн|фальшив|подделать/.test(lower)) {
       return 'подделка документов';
+    }
+    if (/торговл.*люд|рабство|траффик/.test(lower)) {
+      return 'торговля людьми';
+    }
+    if (/изнасил|sexual.*abuse/.test(lower)) {
+      return 'сексуальное насилие';
+    }
+    if (/террор|взорвать|теракт/.test(lower)) {
+      return 'терроризм';
     }
     
     return 'запрещённый контент';
@@ -1819,7 +2320,7 @@ class MasterAIOrchestrator {
     
     if (hasFullRequest) {
       if (context.code.isActive) return 24000;
-      if (context.intent.complexity === 'expert') return 8000;
+      if (context.intent.complexity === 'genius' || context.intent.complexity === 'expert') return 8000;
       return 6000;
     }
 
@@ -1829,6 +2330,7 @@ class MasterAIOrchestrator {
       return 8000;
     }
 
+    if (context.intent.complexity === 'genius') return 6000;
     if (context.intent.complexity === 'expert') return 5000;
     if (context.intent.complexity === 'complex') return 3500;
 
@@ -1841,6 +2343,7 @@ class MasterAIOrchestrator {
     if (context.communication.preferredResponseLength === 'medium') return 1200;
     if (context.communication.preferredResponseLength === 'long') return 2500;
     if (context.communication.preferredResponseLength === 'very-long') return 4000;
+    if (context.communication.preferredResponseLength === 'comprehensive') return 5500;
 
     if (inputLength < 15) return 250;
     if (inputLength < 40) return 600;
@@ -1879,6 +2382,7 @@ class MasterAIOrchestrator {
     const emotionalTemperatureModifiers = {
       excited: 0.15,
       playful: 0.12,
+      euphoric: 0.18,
       frustrated: -0.15,
       angry: -0.10,
       confused: -0.08,
@@ -1886,6 +2390,9 @@ class MasterAIOrchestrator {
       tired: -0.05,
       positive: 0.08,
       negative: 0.05,
+      sarcastic: 0.10,
+      melancholic: -0.03,
+      anxious: -0.07,
       neutral: 0,
     };
 
@@ -1905,6 +2412,8 @@ class MasterAIOrchestrator {
 
     if (context.intent.complexity === 'trivial') {
       temperature -= 0.15;
+    } else if (context.intent.complexity === 'genius') {
+      temperature -= 0.10;
     } else if (context.intent.complexity === 'expert') {
       temperature -= 0.08;
     }
@@ -1913,8 +2422,12 @@ class MasterAIOrchestrator {
       temperature -= 0.12;
     }
 
-    if (context.conversationDepth === 'intimate' || context.conversationDepth === 'expert') {
+    if (context.conversationDepth === 'intimate' || context.conversationDepth === 'expert' || context.conversationDepth === 'profound') {
       temperature += 0.05;
+    }
+
+    if (context.intent.primary === 'philosophical') {
+      temperature += 0.10;
     }
 
     return Math.max(0.05, Math.min(0.98, temperature));
@@ -1923,7 +2436,9 @@ class MasterAIOrchestrator {
   private formatConversationHistory(messages: Message[], context: DeepContext): Array<{ role: string; content: string }> {
     let maxMessages = 18;
 
-    if (context.conversationDepth === 'expert' || context.conversationDepth === 'intimate') {
+    if (context.conversationDepth === 'profound') {
+      maxMessages = 40;
+    } else if (context.conversationDepth === 'intimate' || context.conversationDepth === 'expert') {
       maxMessages = 30;
     } else if (context.conversationDepth === 'deep') {
       maxMessages = 24;
@@ -2039,7 +2554,7 @@ class MasterAIOrchestrator {
       attempt++;
 
       const continuationPrompt = systemPrompt + 
-        '\n\n⚡ ПРОДОЛЖЕНИЕ КОДА:\n• Продолжи с ТОЧНОГО места остановки\n• БЕЗ повторов\n• БЕЗ пояснений\n• Просто продолжай код';
+        '\n\nПРОДОЛЖЕНИЕ КОДА:\n• Продолжи с ТОЧНОГО места остановки\n• БЕЗ повторов\n• БЕЗ пояснений\n• Просто продолжай код';
 
       const recentHistory = history.slice(-4);
       const lastCodeChunk = fullContent.slice(-8000);
