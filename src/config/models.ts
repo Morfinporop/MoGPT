@@ -3,41 +3,7 @@ import type { AIModel } from '../types';
 export const MODEL_ICON = 'https://img.icons8.com/?size=100&id=77iHQnb2ZTjZ&format=png&color=1A1A1A';
 
 export const AI_MODELS: AIModel[] = [
-  // DeepSeek - самые стабильные бесплатные модели
-  {
-    id: 'deepseek/deepseek-chat:free',
-    name: 'MoSeek DeepChat',
-    description: 'DeepSeek Chat (бесплатно, стабильная)',
-    provider: 'MoGPT',
-    icon: 'https://img.icons8.com/?size=100&id=wNdoIFLRlXCJ&format=png&color=000000',
-    color: 'from-blue-500 to-cyan-600',
-  },
-  {
-    id: 'deepseek/deepseek-r1:free',
-    name: 'MoSeek R1',
-    description: 'DeepSeek R1 - Reasoning (бесплатно)',
-    provider: 'MoGPT',
-    icon: 'https://img.icons8.com/?size=100&id=wNdoIFLRlXCJ&format=png&color=3B82F6',
-    color: 'from-indigo-500 to-blue-600',
-  },
-  {
-    id: 'deepseek/deepseek-r1-distill-llama-70b:free',
-    name: 'MoSeek R1 Llama 70B',
-    description: 'DeepSeek R1 Llama 70B (бесплатно)',
-    provider: 'MoGPT',
-    icon: 'https://img.icons8.com/?size=100&id=wNdoIFLRlXCJ&format=png&color=6366F1',
-    color: 'from-violet-500 to-purple-600',
-  },
-  {
-    id: 'deepseek/deepseek-r1-distill-qwen-32b:free',
-    name: 'MoSeek R1 Qwen 32B',
-    description: 'DeepSeek R1 Qwen 32B (бесплатно)',
-    provider: 'MoGPT',
-    icon: 'https://img.icons8.com/?size=100&id=wNdoIFLRlXCJ&format=png&color=8B5CF6',
-    color: 'from-purple-500 to-fuchsia-600',
-  },
-
-  // Google Gemini
+  // Google Gemini - обычно стабильные
   {
     id: 'google/gemini-2.0-flash-exp:free',
     name: 'MoSeek Gemini 2.0',
@@ -45,6 +11,14 @@ export const AI_MODELS: AIModel[] = [
     provider: 'MoGPT',
     icon: 'https://img.icons8.com/?size=100&id=kOPTH4LnJoIq&format=png&color=000000',
     color: 'from-blue-400 to-cyan-500',
+  },
+  {
+    id: 'google/gemini-flash-1.5-exp:free',
+    name: 'MoSeek Gemini 1.5 Exp',
+    description: 'Gemini 1.5 Flash Experimental (бесплатно)',
+    provider: 'MoGPT',
+    icon: 'https://img.icons8.com/?size=100&id=kOPTH4LnJoIq&format=png&color=1E88E5',
+    color: 'from-sky-400 to-blue-500',
   },
   {
     id: 'google/gemini-flash-1.5:free',
@@ -63,6 +37,14 @@ export const AI_MODELS: AIModel[] = [
     color: 'from-green-400 to-emerald-500',
   },
   {
+    id: 'google/gemini-pro:free',
+    name: 'MoSeek Gemini Classic',
+    description: 'Gemini Pro Classic (бесплатно)',
+    provider: 'MoGPT',
+    icon: 'https://img.icons8.com/?size=100&id=kOPTH4LnJoIq&format=png&color=0F9D58',
+    color: 'from-emerald-400 to-green-500',
+  },
+  {
     id: 'google/gemma-2-9b-it:free',
     name: 'MoSeek Gemma 9B',
     description: 'Gemma 2 9B (бесплатно)',
@@ -70,15 +52,47 @@ export const AI_MODELS: AIModel[] = [
     icon: 'https://img.icons8.com/?size=100&id=kOPTH4LnJoIq&format=png&color=EA4335',
     color: 'from-red-400 to-rose-500',
   },
+  {
+    id: 'google/gemma-7b-it:free',
+    name: 'MoSeek Gemma 7B',
+    description: 'Gemma 7B Instruct (бесплатно)',
+    provider: 'MoGPT',
+    icon: 'https://img.icons8.com/?size=100&id=kOPTH4LnJoIq&format=png&color=F4B400',
+    color: 'from-orange-400 to-red-500',
+  },
 
-  // Meta Llama
+  // Meta Llama - много вариантов
+  {
+    id: 'meta-llama/llama-3.3-70b-instruct:free',
+    name: 'MoSeek Llama 3.3 70B',
+    description: 'Llama 3.3 70B (бесплатно)',
+    provider: 'MoGPT',
+    icon: 'https://img.icons8.com/?size=100&id=MWc8B0bgcXAT&format=png&color=0081FB',
+    color: 'from-blue-500 to-indigo-600',
+  },
   {
     id: 'meta-llama/llama-3.2-11b-vision-instruct:free',
-    name: 'MoSeek Vision',
+    name: 'MoSeek Llama Vision',
     description: 'Llama 3.2 Vision 11B (бесплатно)',
     provider: 'MoGPT',
     icon: 'https://img.icons8.com/?size=100&id=MWc8B0bgcXAT&format=png&color=000000',
     color: 'from-purple-400 to-violet-500',
+  },
+  {
+    id: 'meta-llama/llama-3.2-90b-vision-instruct:free',
+    name: 'MoSeek Llama Vision 90B',
+    description: 'Llama 3.2 Vision 90B (бесплатно)',
+    provider: 'MoGPT',
+    icon: 'https://img.icons8.com/?size=100&id=MWc8B0bgcXAT&format=png&color=6366F1',
+    color: 'from-indigo-500 to-purple-600',
+  },
+  {
+    id: 'meta-llama/llama-3.1-70b-instruct:free',
+    name: 'MoSeek Llama 3.1 70B',
+    description: 'Llama 3.1 70B (бесплатно)',
+    provider: 'MoGPT',
+    icon: 'https://img.icons8.com/?size=100&id=MWc8B0bgcXAT&format=png&color=8B5CF6',
+    color: 'from-violet-500 to-purple-600',
   },
   {
     id: 'meta-llama/llama-3.1-8b-instruct:free',
@@ -95,6 +109,14 @@ export const AI_MODELS: AIModel[] = [
     provider: 'MoGPT',
     icon: 'https://img.icons8.com/?size=100&id=MWc8B0bgcXAT&format=png&color=A855F7',
     color: 'from-fuchsia-400 to-purple-500',
+  },
+  {
+    id: 'meta-llama/llama-3.2-1b-instruct:free',
+    name: 'MoSeek Llama 1B',
+    description: 'Llama 3.2 1B - сверхбыстрая (бесплатно)',
+    provider: 'MoGPT',
+    icon: 'https://img.icons8.com/?size=100&id=MWc8B0bgcXAT&format=png&color=C026D3',
+    color: 'from-pink-400 to-fuchsia-500',
   },
 
   // Mistral
@@ -122,8 +144,32 @@ export const AI_MODELS: AIModel[] = [
     icon: 'https://img.icons8.com/?size=100&id=77iHQnb2ZTjZ&format=png&color=EF4444',
     color: 'from-red-500 to-orange-600',
   },
+  {
+    id: 'mistralai/mixtral-8x22b-instruct:free',
+    name: 'MoSeek Mixtral 8x22B',
+    description: 'Mixtral 8x22B - мощная (бесплатно)',
+    provider: 'MoGPT',
+    icon: 'https://img.icons8.com/?size=100&id=77iHQnb2ZTjZ&format=png&color=DC2626',
+    color: 'from-rose-500 to-red-600',
+  },
+  {
+    id: 'mistralai/codestral-mamba:free',
+    name: 'MoSeek Codestral',
+    description: 'Codestral Mamba - для кода (бесплатно)',
+    provider: 'MoGPT',
+    icon: 'https://img.icons8.com/?size=100&id=77iHQnb2ZTjZ&format=png&color=10B981',
+    color: 'from-emerald-500 to-green-600',
+  },
 
   // Qwen
+  {
+    id: 'qwen/qwen-2.5-7b-instruct:free',
+    name: 'MoSeek Qwen 2.5',
+    description: 'Qwen 2.5 7B (бесплатно)',
+    provider: 'MoGPT',
+    icon: 'https://img.icons8.com/?size=100&id=nFz69FUBEVWE&format=png&color=F59E0B',
+    color: 'from-amber-400 to-yellow-500',
+  },
   {
     id: 'qwen/qwen-2-7b-instruct:free',
     name: 'MoSeek Qwen 7B',
@@ -133,19 +179,27 @@ export const AI_MODELS: AIModel[] = [
     color: 'from-yellow-400 to-orange-500',
   },
   {
-    id: 'qwen/qwen-2.5-7b-instruct:free',
-    name: 'MoSeek Qwen 2.5',
-    description: 'Qwen 2.5 7B (бесплатно)',
+    id: 'qwen/qwen-2.5-72b-instruct:free',
+    name: 'MoSeek Qwen 72B',
+    description: 'Qwen 2.5 72B - мощная (бесплатно)',
     provider: 'MoGPT',
-    icon: 'https://img.icons8.com/?size=100&id=nFz69FUBEVWE&format=png&color=F59E0B',
-    color: 'from-amber-400 to-yellow-500',
+    icon: 'https://img.icons8.com/?size=100&id=nFz69FUBEVWE&format=png&color=F97316',
+    color: 'from-orange-500 to-amber-600',
+  },
+  {
+    id: 'qwen/qwen-2.5-coder-32b-instruct:free',
+    name: 'MoSeek Qwen Coder',
+    description: 'Qwen 2.5 Coder 32B (бесплатно)',
+    provider: 'MoGPT',
+    icon: 'https://img.icons8.com/?size=100&id=nFz69FUBEVWE&format=png&color=06B6D4',
+    color: 'from-cyan-500 to-sky-600',
   },
 
-  // Microsoft
+  // Microsoft Phi
   {
     id: 'microsoft/phi-3-medium-128k-instruct:free',
-    name: 'MoSeek Phi-3',
-    description: 'Microsoft Phi-3 (бесплатно)',
+    name: 'MoSeek Phi-3 Medium',
+    description: 'Microsoft Phi-3 Medium (бесплатно)',
     provider: 'MoGPT',
     icon: 'https://img.icons8.com/?size=100&id=VLKafOkk3sBX&format=png&color=000000',
     color: 'from-sky-400 to-blue-500',
@@ -159,7 +213,7 @@ export const AI_MODELS: AIModel[] = [
     color: 'from-cyan-400 to-sky-500',
   },
 
-  // Другие популярные
+  // NousResearch
   {
     id: 'nousresearch/hermes-3-llama-3.1-405b:free',
     name: 'MoSeek Hermes 405B',
@@ -169,8 +223,18 @@ export const AI_MODELS: AIModel[] = [
     color: 'from-fuchsia-400 to-pink-500',
   },
   {
+    id: 'nousresearch/hermes-3-llama-3.1-70b:free',
+    name: 'MoSeek Hermes 70B',
+    description: 'Hermes 3 Llama 70B (бесплатно)',
+    provider: 'MoGPT',
+    icon: 'https://img.icons8.com/?size=100&id=iWw83PVcBpLw&format=png&color=EC4899',
+    color: 'from-pink-500 to-rose-600',
+  },
+
+  // Другие
+  {
     id: 'openchat/openchat-7b:free',
-    name: 'MoSeek Chat 7B',
+    name: 'MoSeek OpenChat',
     description: 'OpenChat 7B (бесплатно)',
     provider: 'MoGPT',
     icon: 'https://img.icons8.com/?size=100&id=jrXaWEpenHwM&format=png&color=000000',
@@ -178,7 +242,7 @@ export const AI_MODELS: AIModel[] = [
   },
   {
     id: 'huggingfaceh4/zephyr-7b-beta:free',
-    name: 'MoSeek Zephyr 7B',
+    name: 'MoSeek Zephyr',
     description: 'Zephyr 7B Beta (бесплатно)',
     provider: 'MoGPT',
     icon: 'https://img.icons8.com/?size=100&id=GKfgYcdXivKO&format=png&color=000000',
@@ -199,6 +263,62 @@ export const AI_MODELS: AIModel[] = [
     provider: 'MoGPT',
     icon: 'https://img.icons8.com/?size=100&id=xuvGCOXi8Wyg&format=png&color=000000',
     color: 'from-pink-400 to-rose-500',
+  },
+  {
+    id: 'cohere/command-r-plus-08-2024:free',
+    name: 'MoSeek Command R+',
+    description: 'Cohere Command R Plus (бесплатно)',
+    provider: 'MoGPT',
+    icon: 'https://img.icons8.com/?size=100&id=xuvGCOXi8Wyg&format=png&color=F472B6',
+    color: 'from-rose-400 to-pink-500',
+  },
+  {
+    id: 'neversleep/llama-3.1-lumimaid-70b:free',
+    name: 'MoSeek Lumimaid 70B',
+    description: 'Lumimaid 70B - креативная (бесплатно)',
+    provider: 'MoGPT',
+    icon: 'https://img.icons8.com/?size=100&id=19295&format=png&color=000000',
+    color: 'from-violet-400 to-indigo-500',
+  },
+  {
+    id: 'sao10k/l3.1-70b-euryale-v2.2:free',
+    name: 'MoSeek Euryale 70B',
+    description: 'Euryale 70B - креативная (бесплатно)',
+    provider: 'MoGPT',
+    icon: 'https://img.icons8.com/?size=100&id=42858&format=png&color=000000',
+    color: 'from-purple-500 to-fuchsia-600',
+  },
+  {
+    id: 'pygmalionai/mythalion-13b:free',
+    name: 'MoSeek Mythalion',
+    description: 'Mythalion 13B (бесплатно)',
+    provider: 'MoGPT',
+    icon: 'https://img.icons8.com/?size=100&id=86527&format=png&color=000000',
+    color: 'from-indigo-400 to-violet-500',
+  },
+  {
+    id: 'undi95/toppy-m-7b:free',
+    name: 'MoSeek Toppy 7B',
+    description: 'Toppy M 7B (бесплатно)',
+    provider: 'MoGPT',
+    icon: 'https://img.icons8.com/?size=100&id=53435&format=png&color=000000',
+    color: 'from-green-400 to-emerald-500',
+  },
+  {
+    id: 'gryphe/mythomist-7b:free',
+    name: 'MoSeek MythoMist',
+    description: 'MythoMist 7B (бесплатно)',
+    provider: 'MoGPT',
+    icon: 'https://img.icons8.com/?size=100&id=80319&format=png&color=000000',
+    color: 'from-sky-400 to-cyan-500',
+  },
+  {
+    id: 'sophosympatheia/midnight-rose-70b:free',
+    name: 'MoSeek Midnight Rose',
+    description: 'Midnight Rose 70B (бесплатно)',
+    provider: 'MoGPT',
+    icon: 'https://img.icons8.com/?size=100&id=40790&format=png&color=000000',
+    color: 'from-rose-500 to-pink-600',
   },
 ];
 
