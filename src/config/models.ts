@@ -27,30 +27,6 @@ export const AI_MODELS: AIModel[] = [
     icon: MODEL_ICON,
     color: 'from-rose-500 to-pink-600',
   },
-  {
-    id: 'openai/gpt-3.5-turbo',
-    name: 'MoSeek GPT-3.5 Turbo',
-    description: 'Универсальная модель без лимитов',
-    provider: 'OpenAI',
-    icon: MODEL_ICON,
-    color: 'from-blue-400 to-indigo-500',
-  },
-  {
-    id: 'huggingface/llama2-7b-chat',
-    name: 'MoSeek Llama2 Chat',
-    description: 'Модель для чат-ботов без ограничений',
-    provider: 'HuggingFace',
-    icon: MODEL_ICON,
-    color: 'from-green-400 to-emerald-500',
-  },
-  {
-    id: 'microsoft/phi-2',
-    name: 'MoSeek Phi-2',
-    description: 'Лёгкая и быстрая модель без лимитов',
-    provider: 'Microsoft',
-    icon: MODEL_ICON,
-    color: 'from-purple-400 to-violet-500',
-  },
 ];
 
 export const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
