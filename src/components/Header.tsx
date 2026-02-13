@@ -105,10 +105,10 @@ export function Header() {
               onClick={() => { setShowModeMenu(!showModeMenu); setShowModelMenu(false); setShowModelMenu2(false); }}
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl hover:bg-white/5 transition-all"
             >
-              <span className={`text-xs font-medium ${compareMode === 'dual' ? 'text-violet-400' : 'text-zinc-500'}`}>
+              <span className={`text-sm font-semibold ${compareMode === 'dual' ? 'text-violet-400' : 'text-zinc-300'}`}>
                 {compareMode === 'single' ? 'Одиночная' : 'Двойная'}
               </span>
-              <ChevronDown className={`w-3 h-3 text-zinc-600 transition-transform duration-200 ${showModeMenu ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-3.5 h-3.5 text-zinc-500 transition-transform duration-200 ${showModeMenu ? 'rotate-180' : ''}`} />
             </motion.button>
 
             <AnimatePresence>
@@ -202,7 +202,7 @@ export function Header() {
                 className="relative ml-0.5 flex items-center"
                 ref={menuRef2}
               >
-                <span className="text-zinc-600 text-xs mx-1">vs</span>
+                <span className="text-zinc-600 text-sm font-semibold mx-1">vs</span>
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
