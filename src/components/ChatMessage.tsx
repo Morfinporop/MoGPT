@@ -167,7 +167,7 @@ export function ChatMessage({ message, compact, hideModelLabel }: ChatMessagePro
       </motion.div>
 
       <div className={`group relative ${compact ? 'max-w-full flex-1' : 'max-w-[85%]'} min-w-0 overflow-hidden`}>
-        {/* Подпись модели — только если НЕ скрыта (в dual режиме она в контейнере) */}
+        {/* Подпись модели — показывается только в обычном режиме */}
         {isAssistant && message.model && !hideModelLabel && (
           <div className="flex items-center gap-1.5 mb-1.5 px-1">
             <div className="w-2 h-2 rounded-full bg-violet-500/60 animate-pulse" />
