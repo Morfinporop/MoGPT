@@ -152,7 +152,6 @@ class AdvancedIntentAnalyzer {
 
   analyze(input: string, history: Message[]): IntentAnalysis {
     const lower = input.toLowerCase().trim();
-    const words = lower.split(/\s+/);
     
     const intent: IntentAnalysis = {
       primary: 'statement',
