@@ -148,7 +148,6 @@ export function ChatMessage({ message, compact, hideModelLabel }: ChatMessagePro
       transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
       className={`flex gap-4 ${isAssistant ? '' : 'flex-row-reverse'}`}
     >
-      {/* Аватар — без фона */}
       <div className="flex-shrink-0 w-11 h-11 flex items-center justify-center">
         {isAssistant ? (
           <img
@@ -166,12 +165,10 @@ export function ChatMessage({ message, compact, hideModelLabel }: ChatMessagePro
       </div>
 
       <div className={`group relative ${compact ? 'max-w-full flex-1' : 'max-w-[85%]'} min-w-0 overflow-hidden`}>
-        {/* Подпись модели */}
         {isAssistant && message.model && !hideModelLabel && (
-          <div className="flex items-center gap-1.5 mb-1.5 px-1">
-            <div className="w-2 h-2 rounded-full bg-violet-500/60 animate-pulse" />
+          <div className="mb-1.5 px-1">
             <span className={`text-[11px] font-medium tracking-wide ${
-              isLight ? 'text-violet-600/80' : 'text-violet-400/80'
+              isLight ? 'text-zinc-900' : 'text-white'
             }`}>
               {message.model}
             </span>
