@@ -141,13 +141,14 @@ export function ChatMessage({ message, compact, hideModelLabel }: ChatMessagePro
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
-      className={`flex gap-3 ${isAssistant ? '' : 'flex-row-reverse'}`}
+      className={`flex gap-4 ${isAssistant ? '' : 'flex-row-reverse'}`}
     >
+      {/* Аватар — увеличенный */}
       <motion.div
-        whileHover={{ scale: 1.1 }}
-        className={`flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center overflow-hidden ${
+        whileHover={{ scale: 1.05 }}
+        className={`flex-shrink-0 w-11 h-11 rounded-2xl flex items-center justify-center overflow-hidden ${
           isAssistant
-            ? 'bg-gradient-to-br from-violet-500 via-purple-500 to-pink-500 glow-soft'
+            ? 'bg-gradient-to-br from-violet-500 via-purple-500 to-pink-500'
             : 'bg-gradient-to-br from-emerald-500 to-teal-500'
         }`}
       >
@@ -155,21 +156,21 @@ export function ChatMessage({ message, compact, hideModelLabel }: ChatMessagePro
           <img
             src={MODEL_ICON}
             alt="MoGPT"
-            className="w-5 h-5 object-contain filter brightness-0 invert"
+            className="w-6 h-6 object-contain filter brightness-0 invert"
           />
         ) : (
           <img
             src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
             alt="User"
-            className="w-5 h-5 object-contain filter brightness-0 invert"
+            className="w-6 h-6 object-contain filter brightness-0 invert"
           />
         )}
       </motion.div>
 
-      <div className={`group relative ${compact ? 'max-w-full flex-1' : 'max-w-[85%]'} min-w-0 overflow-hidden`}>
-        {/* Подпись модели — показывается только в обычном режиме */}
+      <div className={`group relative ${compact ? 'max-w-full flex-1' : 'max-w-[85%]'} min-w-0`}>
+        {/* Подпись модели */}
         {isAssistant && message.model && !hideModelLabel && (
-          <div className="flex items-center gap-1.5 mb-1.5 px-1">
+          <div className="flex items-center gap-1.5 mb-1 px-1">
             <div className="w-2 h-2 rounded-full bg-violet-500/60 animate-pulse" />
             <span className="text-[11px] text-violet-400/80 font-medium tracking-wide">
               {message.model}
@@ -177,14 +178,8 @@ export function ChatMessage({ message, compact, hideModelLabel }: ChatMessagePro
           </div>
         )}
 
-        <motion.div
-          whileHover={{ scale: 1.005 }}
-          className={`relative px-4 py-3 rounded-2xl overflow-hidden ${
-            isAssistant
-              ? 'glass-light rounded-tl-md'
-              : 'bg-gradient-to-br from-violet-500 to-purple-600 rounded-tr-md shadow-lg shadow-violet-500/10'
-          }`}
-        >
+        {/* Контент без фона */}
+        <div className="relative px-1 py-1">
           {renderContent()}
 
           {!message.isLoading && (
@@ -192,11 +187,7 @@ export function ChatMessage({ message, compact, hideModelLabel }: ChatMessagePro
               initial={{ opacity: 0 }}
               whileHover={{ scale: 1.1 }}
               onClick={copyToClipboard}
-              className={`absolute -right-2 -top-2 p-1.5 rounded-lg transition-all opacity-0 group-hover:opacity-100 ${
-                isAssistant
-                  ? 'glass-strong hover:bg-white/10'
-                  : 'bg-white/20 hover:bg-white/30'
-              }`}
+              className="absolute -right-2 -top-2 p-1.5 rounded-lg transition-all opacity-0 group-hover:opacity-100 glass-strong hover:bg-white/10"
             >
               {copied ? (
                 <Check className="w-3.5 h-3.5 text-green-400" />
@@ -205,9 +196,9 @@ export function ChatMessage({ message, compact, hideModelLabel }: ChatMessagePro
               )}
             </motion.button>
           )}
-        </motion.div>
+        </div>
 
-        <div className={`flex items-center gap-2 mt-1.5 px-1 ${isAssistant ? '' : 'justify-end'}`}>
+        <div className={`flex items-center gap-2 mt-1 px-1 ${isAssistant ? '' : 'justify-end'}`}>
           <span className="text-[10px] text-zinc-600">
             {new Date(message.timestamp).toLocaleTimeString('ru-RU', {
               hour: '2-digit',
