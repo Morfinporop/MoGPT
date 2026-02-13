@@ -1,7 +1,7 @@
 import { useEffect, useRef, useMemo } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { useChatStore } from '../store/chatStore';
-import { ChatMessage } from './ChatMessages';
+import { ChatMessage } from './ChatMessage';
 import { WelcomeScreen } from './WelcomeScreen';
 import type { Message } from '../types';
 
