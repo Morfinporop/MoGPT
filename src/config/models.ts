@@ -4,14 +4,6 @@ export const MODEL_ICON = 'https://img.icons8.com/?size=100&id=77iHQnb2ZTjZ&form
 
 export const AI_MODELS: AIModel[] = [
   {
-    id: 'google/gemini-2.0-flash-001',
-    name: 'MoSeek Flash',
-    description: 'Быстрая и точная',
-    provider: 'MoGPT',
-    icon: MODEL_ICON,
-    color: 'from-emerald-500 to-teal-600',
-  },
-  {
     id: 'google/gemma-3-27b-it',
     name: 'MoSeek Gemma',
     description: 'Компактная и умная',
