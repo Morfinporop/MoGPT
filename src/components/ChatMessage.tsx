@@ -25,6 +25,7 @@ export const ChatMessage = memo(function ChatMessage({ message, compact, hideMod
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [finalTypingTime, setFinalTypingTime] = useState<number | null>(null);
+  const [currentTypingTime, setCurrentTypingTime] = useState<number>(0);
   const isAssistant = message.role === 'assistant';
   const { theme } = useThemeStore();
   const { user } = useAuthStore();
@@ -32,6 +33,16 @@ export const ChatMessage = memo(function ChatMessage({ message, compact, hideMod
 
   const isLong = message.content.length > MAX_LENGTH && !message.isLoading;
   const displayContent = isLong && !expanded ? message.content.slice(0, MAX_LENGTH) : message.content;
+
+  useEffect(() => {
+    if (message.isLoading && isAssistant && message.timestamp) {
+      const interval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - message.timestamp) / 1000);
+        setCurrentTypingTime(elapsed);
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [message.isLoading, isAssistant, message.timestamp]);
 
   useEffect(() => {
     if (!message.isLoading && isAssistant && message.timestamp && finalTypingTime === null) {
@@ -156,6 +167,8 @@ export const ChatMessage = memo(function ChatMessage({ message, compact, hideMod
     );
   }, [message.isLoading, displayContent, isAssistant, isLight, isLong, expanded]);
 
+  const displayedTime = message.isLoading ? currentTypingTime : finalTypingTime;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -187,9 +200,9 @@ export const ChatMessage = memo(function ChatMessage({ message, compact, hideMod
             }`}>
               {message.model}
             </span>
-            {finalTypingTime !== null && (
+            {displayedTime !== null && displayedTime > 0 && (
               <span className={`text-[10px] ${isLight ? 'text-zinc-500' : 'text-zinc-400'}`}>
-                {finalTypingTime}s
+                {displayedTime}s
               </span>
             )}
           </div>
