@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Code, Sparkles, MessageCircle, Flame, Smile, Angry, Lock } from 'lucide-react';
+import { Send, Code, Sparkles, MessageCircle, Flame, Smile, Angry, Lock, Image } from 'lucide-react';
 import { useChatStore, type ResponseMode, type RudenessMode } from '../store/chatStore';
 import { useAuthStore } from '../store/authStore';
 import { aiService } from '../services/aiService';
@@ -18,6 +18,14 @@ const RUDENESS_MODES: { id: RudenessMode; label: string; icon: typeof Flame; des
   { id: 'polite', label: 'Вежливый', icon: Smile, desc: 'Без мата и грубости' },
 ];
 
+const VISION_MODELS = [
+  'google/gemini-2.5-flash-preview',
+  'google/gemini-2.5-pro-preview',
+  'openai/gpt-4.1-mini',
+  'meta-llama/llama-4-maverick',
+  'google/gemma-3-27b-it',
+];
+
 const UNLIMITED_EMAILS = ['energoferon41@gmail.com'];
 const CHAR_LIMIT = 1500;
 
@@ -27,7 +35,9 @@ export function ChatInput() {
   const [showRudeness, setShowRudeness] = useState(false);
   const [showLimitWarning, setShowLimitWarning] = useState(false);
   const [showCharLimitWarning, setShowCharLimitWarning] = useState(false);
+  const [attachedImages, setAttachedImages] = useState<string[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const modesRef = useRef<HTMLDivElement>(null);
   const rudenessRef = useRef<HTMLDivElement>(null);
 
@@ -52,6 +62,7 @@ export function ChatInput() {
   const charCount = input.length;
   const isOverLimit = !isUnlimitedUser && charCount > CHAR_LIMIT;
   const currentModelData = AI_MODELS.find(m => m.id === selectedModel) || AI_MODELS[0];
+  const supportsVision = VISION_MODELS.includes(selectedModel);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -89,10 +100,42 @@ export function ChatInput() {
     setInput(value);
   };
 
+  const handleImageAttach = () => {
+    if (supportsVision && fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    Array.from(files).forEach(file => {
+      if (file.size > 10 * 1024 * 1024) return;
+      if (!file.type.startsWith('image/')) return;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          setAttachedImages(prev => [...prev.slice(0, 3), reader.result as string]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setAttachedImages(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     const trimmedInput = input.trim();
-    if (!trimmedInput || generating || isOverLimit) return;
+    if ((!trimmedInput && attachedImages.length === 0) || generating || isOverLimit) return;
 
     if (!canSendMessage()) {
       setShowLimitWarning(true);
@@ -101,6 +144,8 @@ export function ChatInput() {
     }
 
     setInput('');
+    const images = [...attachedImages];
+    setAttachedImages([]);
     if (textareaRef.current) {
       textareaRef.current.style.height = '36px';
     }
@@ -109,9 +154,25 @@ export function ChatInput() {
       incrementGuestMessages();
     }
 
+    let userContent: string | Array<{ type: string; text?: string; image_url?: { url: string } }>;
+
+    if (images.length > 0 && supportsVision) {
+      const parts: Array<{ type: string; text?: string; image_url?: { url: string } }> = [];
+      if (trimmedInput) {
+        parts.push({ type: 'text', text: trimmedInput });
+      }
+      images.forEach(img => {
+        parts.push({ type: 'image_url', image_url: { url: img } });
+      });
+      userContent = parts;
+    } else {
+      userContent = trimmedInput;
+    }
+
     addMessage({
       role: 'user',
-      content: trimmedInput,
+      content: typeof userContent === 'string' ? userContent : trimmedInput || 'Изображение',
+      images: images.length > 0 ? images : undefined,
     });
 
     const chatId = useChatStore.getState().currentChatId;
@@ -129,6 +190,14 @@ export function ChatInput() {
 
     try {
       const allMessages = [...getCurrentMessages()];
+
+      if (images.length > 0 && supportsVision) {
+        const lastMsg = allMessages[allMessages.length - 1];
+        if (lastMsg) {
+          (lastMsg as Record<string, unknown>).content = userContent;
+        }
+      }
+
       const response = await aiService.generateResponse(allMessages, responseMode, rudenessMode, selectedModel);
 
       updateMessage(assistantId, '', 'Печатаю...');
@@ -195,6 +264,27 @@ export function ChatInput() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {attachedImages.length > 0 && (
+        <div className="flex gap-2 mb-2 flex-wrap">
+          {attachedImages.map((img, idx) => (
+            <div key={idx} className="relative group">
+              <img
+                src={img}
+                alt={`Attached ${idx + 1}`}
+                className="w-16 h-16 rounded-xl object-cover border border-white/10"
+              />
+              <button
+                type="button"
+                onClick={() => removeImage(idx)}
+                className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="flex items-end gap-2">
         <div className="relative" ref={modesRef}>
@@ -323,14 +413,41 @@ export function ChatInput() {
             isOverLimit ? 'border-red-500/50' : 'border-white/5'
           } ${limitReached ? 'opacity-50' : ''}`}
         >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handleFileChange}
+            className="hidden"
+          />
+
           <div className="relative flex items-center min-h-[52px] pl-4 pr-2">
+            {supportsVision && (
+              <motion.button
+                type="button"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={handleImageAttach}
+                disabled={generating || limitReached}
+                className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center mr-2 transition-all ${
+                  generating || limitReached
+                    ? 'opacity-30 cursor-not-allowed'
+                    : 'hover:bg-white/10 text-zinc-500 hover:text-violet-400'
+                }`}
+                title="Прикрепить изображение"
+              >
+                <Image className="w-4 h-4" />
+              </motion.button>
+            )}
+
             <div className="flex-1 flex items-center">
               <textarea
                 ref={textareaRef}
                 value={input}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
-                placeholder={limitReached ? 'Зарегистрируйся для продолжения...' : 'Напиши что-нибудь...'}
+                placeholder={limitReached ? 'Зарегистрируйся для продолжения...' : supportsVision ? 'Напиши или прикрепи картинку...' : 'Напиши что-нибудь...'}
                 disabled={generating || limitReached}
                 maxLength={isUnlimitedUser ? undefined : CHAR_LIMIT}
                 rows={1}
@@ -355,11 +472,11 @@ export function ChatInput() {
 
             <motion.button
               type="submit"
-              disabled={!input.trim() || generating || limitReached || isOverLimit}
+              disabled={(!input.trim() && attachedImages.length === 0) || generating || limitReached || isOverLimit}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className={`flex-shrink-0 w-10 h-10 rounded-xl transition-all duration-200 ml-1 flex items-center justify-center ${
-                input.trim() && !generating && !limitReached && !isOverLimit
+                (input.trim() || attachedImages.length > 0) && !generating && !limitReached && !isOverLimit
                   ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/25'
                   : 'bg-white/5 text-zinc-600 cursor-not-allowed'
               }`}
