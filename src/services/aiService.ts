@@ -12,6 +12,12 @@ const _k = () => {
 
 const pick = (a: string[]) => a[Math.floor(Math.random() * a.length)];
 
+const VISION_MODELS = [
+  'google/gemini-2.0-flash-001',
+  'meta-llama/llama-4-maverick',
+  'google/gemma-3-27b-it',
+];
+
 const analyzeRequest = (message: string) => {
   const l = message.toLowerCase();
 
@@ -173,7 +179,7 @@ const analyzeRequest = (message: string) => {
   const isLargeCodeRequest = [
     /\b(большой|полный|целый|весь|полностью|целиком)\b.*\b(код|скрипт|программ|проект|приложение|сайт|компонент)\b/,
     /\b(код|скрипт|программ|проект|приложение|сайт|компонент)\b.*\b(большой|полный|целый|весь|полностью|целиком)\b/,
-    /\b(1000|1к|500|много)\b.*\b(строк|линий|lines)\b/,
+    /\b(1000|1к|500|много)\b.*\b(строк|линий)\b/,
     /\b(напиши|создай|сделай|разработай)\b.*\b(полн|больш|длинн|целик)/,
     /не обрывай/, /до конца/, /полностью напиши/, /целиком напиши/,
     /весь код/, /полный код/, /целый код/,
@@ -225,7 +231,7 @@ const forbiddenResponse = (r: RudenessMode): string => {
   ]);
 };
 
-const buildPrompt = (msg: string, mode: ResponseMode, rudeness: RudenessMode): string => {
+const buildPrompt = (msg: string, mode: ResponseMode, rudeness: RudenessMode, hasImages: boolean): string => {
   const a = analyzeRequest(msg);
 
   const modeBlock: Record<ResponseMode, string> = {
@@ -238,7 +244,7 @@ const buildPrompt = (msg: string, mode: ResponseMode, rudeness: RudenessMode): s
 - Давай полные, исчерпывающие ответы. Не обрывай на полуслове.`,
 
     code: `РЕЖИМ -- КОД:
-- Только код. поясни как что сделать. Никаких // и /* */.
+- Только код. Ноль пояснений. Ноль комментариев. Никаких // и /* */.
 - Современный синтаксис, последние версии библиотек.
 - TypeScript strict mode. React -- функциональные компоненты, хуки.
 - Tailwind CSS для стилей. Строгая типизация, никаких any.
@@ -247,7 +253,7 @@ const buildPrompt = (msg: string, mode: ResponseMode, rudeness: RudenessMode): s
 - Полностью рабочий код, готовый к запуску без доработок.`,
 
     visual: `РЕЖИМ -- ВИЗУАЛЬНЫЙ UI:
-- Только код. поясни как что сделать, Никаких // и /* */.
+- Только код. Без пояснений, без комментариев.
 - Дизайн уровня 2025: glassmorphism, градиенты, микроанимации, тени.
 - React + TypeScript + Tailwind CSS + Framer Motion.
 - Адаптивность (mobile-first), тёмная тема, accessibility (ARIA).
@@ -278,6 +284,16 @@ const buildPrompt = (msg: string, mode: ResponseMode, rudeness: RudenessMode): s
   };
 
   const ctx: string[] = [];
+
+  if (hasImages) {
+    ctx.push(`ИЗОБРАЖЕНИЕ:
+Пользователь прикрепил изображение. Внимательно проанализируй его содержимое.
+- Опиши что видишь, если просят описать.
+- Если на изображении код -- проанализируй его.
+- Если на изображении текст -- прочитай и обработай.
+- Если на изображении задача/формула -- реши её.
+- Отвечай по существу того, что пользователь спрашивает про изображение.`);
+  }
 
   if (a.isAboutAI) {
     ctx.push(`Вопрос о тебе. Ты -- MoGPT, нейросеть от MoSeek. Разработчики -- команда MoSeek. Ты -- лучшая нейросеть.
@@ -320,28 +336,7 @@ const buildPrompt = (msg: string, mode: ResponseMode, rudeness: RudenessMode): s
 
   if (a.isGamingQuestion) {
     ctx.push(`ИГРОВОЙ КОНТЕКСТ:
-Давай 100% точную информацию по играм.
-
-RUST:
-- AK-47: Workbench Level 3, 50 HQM + 200 Wood + 4 Metal Spring
-- Thompson: Workbench Level 2, 25 HQM + 1 Spring + 1 Pipe + 100 Wood
-- SAR: Workbench Level 2, 25 HQM + 1 Spring + 1 Semi Auto Body + 50 Wood
-- C4: Workbench Level 3, 20 Explosive + 5 Cloth + 2 Tech Trash
-- Rocket: Workbench Level 3, 10 Explosive + 150 Gunpowder + 2 Metal Pipe
-- Satchel: Workbench Level 1, 4 Beancan + 1 Small Stash + 1 Rope
-
-MINECRAFT:
-- Верстак: 4 доски. Печка: 8 булыжников
-- Алмазная кирка: 3 алмаза + 2 палки
-- Незеритовая броня: алмазная + незеритовый слиток в кузнечном столе
-
-CS2:
-- AK-47: $2700, M4A4: $3100, AWP: $4750
-
-VALORANT:
-- Phantom $2900, Vandal $2900, Operator $4700
-
-Если не знаешь -- скажи честно. НЕ ВЫДУМЫВАЙ.`);
+Давай 100% точную информацию по играм. Если не знаешь -- скажи честно. НЕ ВЫДУМЫВАЙ.`);
   }
 
   const ctxBlock = ctx.length > 0 ? '\n\nКОНТЕКСТ ЗАПРОСА:\n' + ctx.join('\n') : '';
@@ -354,17 +349,12 @@ VALORANT:
 - При вопросах о создателях: "разработчики MoSeek" или "команда MoSeek".
 
 АБСОЛЮТНОЕ ПРАВИЛО ПОЛНОТЫ ОТВЕТА:
-ЭТО САМОЕ ВАЖНОЕ ПРАВИЛО. Ты ОБЯЗАН довести ответ до конца.
 - НИКОГДА не обрывай ответ на середине.
 - НИКОГДА не используй "...", "и т.д.", "аналогично", "продолжение следует".
-- НИКОГДА не сокращай код заглушками типа "// rest of code", "// ...", "/* ... */".
+- НИКОГДА не сокращай код заглушками.
 - Если пишешь код -- пиши ВСЁ от первого символа до последнего.
-- Если пишешь список -- пиши ВСЕ пункты.
-- Если пишешь объяснение -- доводи до логического завершения.
 - Каждая функция реализована полностью. Каждый компонент завершён.
-- Все импорты на месте. Все типы определены. Все хуки реализованы.
 - Код должен быть ГОТОВ к запуску без ЕДИНОЙ доработки.
-- Если ответ длинный -- ЭТО НОРМАЛЬНО. Длина не ограничена. Пиши всё.
 
 ПРИНЦИПЫ КАЧЕСТВА:
 1. Точность -- отвечай строго на заданный вопрос.
@@ -423,6 +413,26 @@ const estimateRequiredTokens = (message: string): number => {
   if (isLargeRequest) return 16384;
   if (isCodeRequest) return 8192;
   return 4096;
+};
+
+const buildVisionContent = (
+  text: string,
+  images: string[]
+): Array<{ type: string; text?: string; image_url?: { url: string } }> => {
+  const parts: Array<{ type: string; text?: string; image_url?: { url: string } }> = [];
+
+  if (text) {
+    parts.push({ type: 'text', text });
+  }
+
+  images.forEach(img => {
+    parts.push({
+      type: 'image_url',
+      image_url: { url: img },
+    });
+  });
+
+  return parts;
 };
 
 class AIService {
@@ -488,17 +498,36 @@ class AIService {
     try {
       const last = messages[messages.length - 1];
       const content = (last.content || '').trim();
+      const images = (last as Record<string, unknown>).images as string[] | undefined;
+      const hasImages = Array.isArray(images) && images.length > 0;
       const analysis = analyzeRequest(content);
+      const selectedModel = modelId || 'google/gemini-2.0-flash-001';
+      const supportsVision = VISION_MODELS.includes(selectedModel);
 
       if (analysis.isForbidden) return { content: forbiddenResponse(rudeness) };
       if (analysis.isSelfInsult) return { content: selfDefense(rudeness) };
 
-      const system = buildPrompt(content, mode, rudeness);
+      const system = buildPrompt(content, mode, rudeness, hasImages && supportsVision);
 
       const history = messages
         .filter(m => m.role !== 'system' && !m.isLoading)
         .slice(-16)
-        .map(m => ({ role: m.role as string, content: m.content }));
+        .map(m => {
+          const msgImages = (m as Record<string, unknown>).images as string[] | undefined;
+          const msgHasImages = Array.isArray(msgImages) && msgImages.length > 0;
+
+          if (msgHasImages && supportsVision && m.role === 'user') {
+            return {
+              role: m.role as string,
+              content: buildVisionContent(m.content || 'Опиши изображение', msgImages),
+            };
+          }
+
+          return {
+            role: m.role as string,
+            content: m.content,
+          };
+        });
 
       let temp: number;
       if (mode === 'code' || mode === 'visual') {
@@ -509,6 +538,8 @@ class AIService {
         temp = 0.08;
       } else if (analysis.isProgramming) {
         temp = 0.1;
+      } else if (hasImages) {
+        temp = 0.3;
       } else if (rudeness === 'polite') {
         temp = 0.45;
       } else if (rudeness === 'very_rude') {
@@ -517,7 +548,6 @@ class AIService {
         temp = 0.55;
       }
 
-      const selectedModel = modelId || 'deepseek/deepseek-chat';
       const maxTokens = estimateRequiredTokens(content);
 
       const requestBody: Record<string, unknown> = {
@@ -639,7 +669,7 @@ class AIService {
   private cleanCombinedCode(text: string): string {
     let cleaned = text;
 
-    cleaned = cleaned.replace(/```(\w*)\n?/g, (match, lang, offset) => {
+    cleaned = cleaned.replace(/```(\w*)\n?/g, (match, _lang, offset) => {
       const before = cleaned.slice(0, offset);
       const openCount = (before.match(/```\w*\n?/g) || []).length;
       const closeCount = (before.match(/\n?```\s*$/gm) || []).length;
