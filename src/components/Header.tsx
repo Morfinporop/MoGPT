@@ -2,12 +2,15 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, ChevronDown } from 'lucide-react';
 import { useChatStore } from '../store/chatStore';
+import { useThemeStore } from '../store/themeStore';
 import { AI_MODELS } from '../config/models';
 
 type CompareMode = 'single' | 'dual';
 
 export function Header() {
   const { toggleSidebar, selectedModel, setSelectedModel, createNewChat, setCurrentChat } = useChatStore();
+  const { theme } = useThemeStore();
+  const isDark = theme === 'dark';
   const [showModelMenu, setShowModelMenu] = useState(false);
   const [showModelMenu2, setShowModelMenu2] = useState(false);
   const [showModeMenu, setShowModeMenu] = useState(false);
@@ -33,7 +36,6 @@ export function Header() {
   useEffect(() => {
     const stored = localStorage.getItem('moseek_compare_mode');
     if (stored === 'dual') setCompareMode('dual');
-
     const storedSecond = localStorage.getItem('moseek_second_model');
     if (storedSecond) setSecondModel(storedSecond);
   }, []);
@@ -47,10 +49,7 @@ export function Header() {
   }, [secondModel]);
 
   const handleSelectModel = (modelId: string) => {
-    if (modelId === selectedModel) {
-      setShowModelMenu(false);
-      return;
-    }
+    if (modelId === selectedModel) { setShowModelMenu(false); return; }
     setSelectedModel(modelId);
     if (compareMode === 'single') {
       const newChatId = createNewChat();
@@ -60,10 +59,7 @@ export function Header() {
   };
 
   const handleSelectModel2 = (modelId: string) => {
-    if (modelId === secondModel) {
-      setShowModelMenu2(false);
-      return;
-    }
+    if (modelId === secondModel) { setShowModelMenu2(false); return; }
     setSecondModel(modelId);
     setShowModelMenu2(false);
   };
@@ -71,120 +67,87 @@ export function Header() {
   const handleModeChange = (mode: CompareMode) => {
     setCompareMode(mode);
     setShowModeMenu(false);
-
     if (mode === 'dual' && secondModel === selectedModel) {
       const other = AI_MODELS.find(m => m.id !== selectedModel);
       if (other) setSecondModel(other.id);
     }
-
     const newChatId = createNewChat();
     if (newChatId) setCurrentChat(newChatId);
   };
 
   return (
     <motion.header
-      initial={{ opacity: 0, y: -20 }}
+      initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       className="fixed top-0 left-0 right-0 z-50"
     >
-      <div className="glass-strong border-b border-white/5">
-        <div className="h-16 flex items-center px-2 sm:px-4">
+      <div className={`border-b ${isDark ? 'bg-[#000000]/90 backdrop-blur-xl border-white/[0.06]' : 'bg-white/90 backdrop-blur-xl border-black/[0.06]'}`}>
+        <div className="h-14 flex items-center px-3 sm:px-4">
+          {/* Hamburger */}
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={toggleSidebar}
-            className="p-2.5 rounded-xl glass-light hover:bg-white/10 transition-all flex-shrink-0"
+            className={`p-2 rounded-xl transition-all ${isDark ? 'hover:bg-white/[0.06]' : 'hover:bg-black/[0.04]'}`}
           >
-            <Menu className="w-5 h-5 text-zinc-400" />
+            <Menu className={`w-5 h-5 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`} />
           </motion.button>
 
+          {/* Mode selector */}
           <div className="relative ml-2" ref={modeRef}>
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => { setShowModeMenu(!showModeMenu); setShowModelMenu(false); setShowModelMenu2(false); }}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl hover:bg-white/5 transition-all"
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-all ${isDark ? 'hover:bg-white/[0.06]' : 'hover:bg-black/[0.04]'}`}
             >
-              <span className={`text-sm font-semibold ${compareMode === 'dual' ? 'text-violet-400' : 'text-zinc-300'}`}>
+              <span className={`text-sm font-medium ${
+                compareMode === 'dual'
+                  ? 'text-[#2196F3]'
+                  : isDark ? 'text-zinc-400' : 'text-zinc-500'
+              }`}>
                 {compareMode === 'single' ? 'Одиночная' : 'Двойная'}
               </span>
-              <ChevronDown className={`w-3.5 h-3.5 text-zinc-500 transition-transform duration-200 ${showModeMenu ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                isDark ? 'text-zinc-500' : 'text-zinc-400'
+              } ${showModeMenu ? 'rotate-180' : ''}`} />
             </motion.button>
 
             <AnimatePresence>
               {showModeMenu && (
                 <motion.div
-                  initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                  initial={{ opacity: 0, y: -4, scale: 0.98 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -8, scale: 0.95 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute top-full left-0 mt-2 w-48 glass-strong rounded-xl border border-white/10 overflow-hidden z-50"
+                  exit={{ opacity: 0, y: -4, scale: 0.98 }}
+                  transition={{ duration: 0.12 }}
+                  className={`absolute top-full left-0 mt-1.5 w-48 rounded-xl overflow-hidden z-50 shadow-xl ${
+                    isDark ? 'bg-[#1c1c1e] border border-white/[0.08]' : 'bg-white border border-black/[0.06] shadow-lg'
+                  }`}
                 >
-                  <div className="p-2 border-b border-white/5">
-                    <p className="text-[10px] text-zinc-500 px-2">Режим сравнения</p>
+                  <div className={`px-3 py-2 border-b ${isDark ? 'border-white/[0.06]' : 'border-black/[0.04]'}`}>
+                    <p className={`text-[11px] font-medium ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>Режим</p>
                   </div>
-                  <button
-                    onClick={() => handleModeChange('single')}
-                    className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/5 transition-all ${compareMode === 'single' ? 'bg-violet-500/10' : ''}`}
-                  >
-                    <div className="flex-1">
-                      <p className={`text-sm ${compareMode === 'single' ? 'text-white' : 'text-zinc-400'}`}>Одиночная</p>
-                      <p className="text-[10px] text-zinc-600">Одна модель отвечает</p>
-                    </div>
-                    {compareMode === 'single' && <div className="w-2 h-2 rounded-full bg-violet-500" />}
-                  </button>
-                  <button
-                    onClick={() => handleModeChange('dual')}
-                    className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/5 transition-all ${compareMode === 'dual' ? 'bg-violet-500/10' : ''}`}
-                  >
-                    <div className="flex-1">
-                      <p className={`text-sm ${compareMode === 'dual' ? 'text-white' : 'text-zinc-400'}`}>Двойная</p>
-                      <p className="text-[10px] text-zinc-600">Две модели сравниваются</p>
-                    </div>
-                    {compareMode === 'dual' && <div className="w-2 h-2 rounded-full bg-violet-500" />}
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          <div className="relative ml-1" ref={menuRef}>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => { setShowModelMenu(!showModelMenu); setShowModelMenu2(false); setShowModeMenu(false); }}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl hover:bg-white/5 transition-all"
-            >
-              <span className="text-sm font-semibold text-zinc-300">{currentModel.name}</span>
-              <ChevronDown className={`w-3.5 h-3.5 text-zinc-500 transition-transform duration-200 ${showModelMenu ? 'rotate-180' : ''}`} />
-            </motion.button>
-
-            <AnimatePresence>
-              {showModelMenu && (
-                <motion.div
-                  initial={{ opacity: 0, y: -8, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -8, scale: 0.95 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute top-full left-0 mt-2 w-64 glass-strong rounded-xl border border-white/10 overflow-hidden z-50 max-h-[70vh] overflow-y-auto"
-                >
-                  <div className="p-2.5 border-b border-white/5 sticky top-0 glass-strong z-10">
-                    <p className="text-xs text-zinc-500 px-2">{compareMode === 'dual' ? 'Модель 1' : 'Выбор модели'}</p>
-                  </div>
-                  {AI_MODELS.map((model) => (
+                  {(['single', 'dual'] as const).map((mode) => (
                     <button
-                      key={model.id}
-                      onClick={() => handleSelectModel(model.id)}
-                      disabled={compareMode === 'dual' && model.id === secondModel}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/5 transition-all ${
-                        selectedModel === model.id ? 'bg-violet-500/10' : ''
-                      } ${compareMode === 'dual' && model.id === secondModel ? 'opacity-30 cursor-not-allowed' : ''}`}
+                      key={mode}
+                      onClick={() => handleModeChange(mode)}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 text-left transition-all ${
+                        isDark ? 'hover:bg-white/[0.06]' : 'hover:bg-black/[0.03]'
+                      } ${compareMode === mode ? isDark ? 'bg-white/[0.04]' : 'bg-black/[0.02]' : ''}`}
                     >
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-medium ${selectedModel === model.id ? 'text-white' : 'text-zinc-400'}`}>{model.name}</p>
-                        <p className="text-[10px] text-zinc-600 truncate">{model.description}</p>
+                      <div>
+                        <p className={`text-sm ${
+                          compareMode === mode
+                            ? isDark ? 'text-white font-medium' : 'text-black font-medium'
+                            : isDark ? 'text-zinc-400' : 'text-zinc-500'
+                        }`}>
+                          {mode === 'single' ? 'Одиночная' : 'Двойная'}
+                        </p>
+                        <p className={`text-[10px] ${isDark ? 'text-zinc-600' : 'text-zinc-400'}`}>
+                          {mode === 'single' ? 'Одна модель' : 'Две модели'}
+                        </p>
                       </div>
-                      {selectedModel === model.id && <div className="w-2 h-2 rounded-full bg-violet-500 flex-shrink-0" />}
+                      {compareMode === mode && <div className="w-2 h-2 rounded-full bg-[#2196F3]" />}
                     </button>
                   ))}
                 </motion.div>
@@ -192,6 +155,60 @@ export function Header() {
             </AnimatePresence>
           </div>
 
+          {/* Model 1 selector */}
+          <div className="relative ml-1" ref={menuRef}>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => { setShowModelMenu(!showModelMenu); setShowModelMenu2(false); setShowModeMenu(false); }}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-all ${isDark ? 'hover:bg-white/[0.06]' : 'hover:bg-black/[0.04]'}`}
+            >
+              <span className={`text-sm font-medium ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>{currentModel.name}</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isDark ? 'text-zinc-500' : 'text-zinc-400'} ${showModelMenu ? 'rotate-180' : ''}`} />
+            </motion.button>
+
+            <AnimatePresence>
+              {showModelMenu && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -4, scale: 0.98 }}
+                  transition={{ duration: 0.12 }}
+                  className={`absolute top-full left-0 mt-1.5 w-60 rounded-xl overflow-hidden z-50 max-h-[70vh] overflow-y-auto shadow-xl ${
+                    isDark ? 'bg-[#1c1c1e] border border-white/[0.08]' : 'bg-white border border-black/[0.06] shadow-lg'
+                  }`}
+                >
+                  <div className={`px-3 py-2 border-b sticky top-0 z-10 ${
+                    isDark ? 'border-white/[0.06] bg-[#1c1c1e]' : 'border-black/[0.04] bg-white'
+                  }`}>
+                    <p className={`text-[11px] font-medium ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                      {compareMode === 'dual' ? 'Модель 1' : 'Модель'}
+                    </p>
+                  </div>
+                  {AI_MODELS.map((model) => (
+                    <button
+                      key={model.id}
+                      onClick={() => handleSelectModel(model.id)}
+                      disabled={compareMode === 'dual' && model.id === secondModel}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 text-left transition-all ${
+                        isDark ? 'hover:bg-white/[0.06]' : 'hover:bg-black/[0.03]'
+                      } ${selectedModel === model.id ? isDark ? 'bg-white/[0.04]' : 'bg-black/[0.02]' : ''} ${
+                        compareMode === 'dual' && model.id === secondModel ? 'opacity-30 cursor-not-allowed' : ''
+                      }`}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className={`text-sm ${selectedModel === model.id ? isDark ? 'text-white font-medium' : 'text-black font-medium' : isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>{model.name}</p>
+                        <p className={`text-[10px] truncate ${isDark ? 'text-zinc-600' : 'text-zinc-400'}`}>{model.description}</p>
+                      </div>
+                      {selectedModel === model.id && <div className="w-2 h-2 rounded-full bg-[#2196F3] flex-shrink-0" />}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Model 2 (dual mode) */}
           <AnimatePresence>
             {compareMode === 'dual' && (
               <motion.div
@@ -202,43 +219,49 @@ export function Header() {
                 className="relative ml-0.5 flex items-center"
                 ref={menuRef2}
               >
-                <span className="text-zinc-600 text-sm font-semibold mx-1">vs</span>
+                <span className={`text-xs font-medium mx-1 ${isDark ? 'text-zinc-600' : 'text-zinc-400'}`}>vs</span>
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => { setShowModelMenu2(!showModelMenu2); setShowModelMenu(false); setShowModeMenu(false); }}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl hover:bg-white/5 transition-all"
+                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-all ${isDark ? 'hover:bg-white/[0.06]' : 'hover:bg-black/[0.04]'}`}
                 >
-                  <span className="text-sm font-semibold text-zinc-300">{currentModel2.name}</span>
-                  <ChevronDown className={`w-3.5 h-3.5 text-zinc-500 transition-transform duration-200 ${showModelMenu2 ? 'rotate-180' : ''}`} />
+                  <span className={`text-sm font-medium ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>{currentModel2.name}</span>
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isDark ? 'text-zinc-500' : 'text-zinc-400'} ${showModelMenu2 ? 'rotate-180' : ''}`} />
                 </motion.button>
 
                 <AnimatePresence>
                   {showModelMenu2 && (
                     <motion.div
-                      initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                      initial={{ opacity: 0, y: -4, scale: 0.98 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -8, scale: 0.95 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute top-full left-0 mt-2 w-64 glass-strong rounded-xl border border-white/10 overflow-hidden z-50 max-h-[70vh] overflow-y-auto"
+                      exit={{ opacity: 0, y: -4, scale: 0.98 }}
+                      transition={{ duration: 0.12 }}
+                      className={`absolute top-full left-0 mt-1.5 w-60 rounded-xl overflow-hidden z-50 max-h-[70vh] overflow-y-auto shadow-xl ${
+                        isDark ? 'bg-[#1c1c1e] border border-white/[0.08]' : 'bg-white border border-black/[0.06] shadow-lg'
+                      }`}
                     >
-                      <div className="p-2.5 border-b border-white/5 sticky top-0 glass-strong z-10">
-                        <p className="text-xs text-zinc-500 px-2">Модель 2</p>
+                      <div className={`px-3 py-2 border-b sticky top-0 z-10 ${
+                        isDark ? 'border-white/[0.06] bg-[#1c1c1e]' : 'border-black/[0.04] bg-white'
+                      }`}>
+                        <p className={`text-[11px] font-medium ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>Модель 2</p>
                       </div>
                       {AI_MODELS.map((model) => (
                         <button
                           key={model.id}
                           onClick={() => handleSelectModel2(model.id)}
                           disabled={model.id === selectedModel}
-                          className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/5 transition-all ${
-                            secondModel === model.id ? 'bg-violet-500/10' : ''
-                          } ${model.id === selectedModel ? 'opacity-30 cursor-not-allowed' : ''}`}
+                          className={`w-full flex items-center justify-between px-3 py-2.5 text-left transition-all ${
+                            isDark ? 'hover:bg-white/[0.06]' : 'hover:bg-black/[0.03]'
+                          } ${secondModel === model.id ? isDark ? 'bg-white/[0.04]' : 'bg-black/[0.02]' : ''} ${
+                            model.id === selectedModel ? 'opacity-30 cursor-not-allowed' : ''
+                          }`}
                         >
-                          <div className="flex-1 min-w-0">
-                            <p className={`text-sm font-medium ${secondModel === model.id ? 'text-white' : 'text-zinc-400'}`}>{model.name}</p>
-                            <p className="text-[10px] text-zinc-600 truncate">{model.description}</p>
+                          <div className="min-w-0 flex-1">
+                            <p className={`text-sm ${secondModel === model.id ? isDark ? 'text-white font-medium' : 'text-black font-medium' : isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>{model.name}</p>
+                            <p className={`text-[10px] truncate ${isDark ? 'text-zinc-600' : 'text-zinc-400'}`}>{model.description}</p>
                           </div>
-                          {secondModel === model.id && <div className="w-2 h-2 rounded-full bg-violet-500 flex-shrink-0" />}
+                          {secondModel === model.id && <div className="w-2 h-2 rounded-full bg-[#2196F3] flex-shrink-0" />}
                         </button>
                       ))}
                     </motion.div>
@@ -250,8 +273,9 @@ export function Header() {
 
           <div className="flex-1" />
 
+          {/* Logo */}
           <div className="pr-2 sm:pr-4">
-            <h1 className="text-lg font-bold bg-gradient-to-r from-violet-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+            <h1 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-black'}`}>
               MoSeek
             </h1>
           </div>
