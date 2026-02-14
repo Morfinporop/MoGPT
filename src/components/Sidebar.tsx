@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, MessageSquare, Plus, LogOut, Loader2, Camera, Sun, Moon, Trash2, ChevronDown, Pencil, Mail, User, AlertTriangle, Check, ArrowLeft, Shield } from 'lucide-react';
+import { X, MessageSquare, Plus, LogOut, Loader2, Camera, Sun, Moon, Trash2, ChevronDown, Pencil, Lock, User, AlertTriangle, Check, ArrowLeft, Shield, Eye, EyeOff } from 'lucide-react';
 import { useChatStore } from '../store/chatStore';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
@@ -10,7 +10,7 @@ const TURNSTILE_SITE_KEY = '0x4AAAAAACa5EobYKh_TrmuZ';
 const DISCORD_URL = 'https://discord.gg/qjnyAr7YXe';
 
 type ModalType = 'terms' | 'privacy' | 'cookies' | 'profile' | 'auth' | null;
-type ProfileView = 'main' | 'editName' | 'editEmail' | 'verifyEmail' | 'deleteAccount' | 'deleteVerify';
+type ProfileView = 'main' | 'editName' | 'changePassword' | 'deleteAccount' | 'deleteVerify';
 type AuthStep = 'form' | 'verify';
 
 const VALID_EMAIL_DOMAINS = [
@@ -420,18 +420,14 @@ export function Sidebar() {
 
       <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
 
-      {/* ═══ Модалка профиля ═══ */}
+      {/* ═══ Профиль ═══ */}
       <AnimatePresence>
         {activeModal === 'profile' && (
-          <ProfileModal
-            onClose={() => setActiveModal(null)}
-            isDark={isDark}
-            fileInputRef={fileInputRef}
-          />
+          <ProfileModal onClose={() => setActiveModal(null)} isDark={isDark} fileInputRef={fileInputRef} />
         )}
       </AnimatePresence>
 
-      {/* ═══ Модалка авторизации ═══ */}
+      {/* ═══ Авторизация ═══ */}
       <AnimatePresence>
         {activeModal === 'auth' && (
           <AuthModal onClose={() => setActiveModal(null)} isDark={isDark} />
@@ -499,7 +495,7 @@ export function Sidebar() {
 }
 
 /* ═══════════════════════════════════════════
-   ProfileModal — профиль с редактированием
+   ProfileModal
    ═══════════════════════════════════════════ */
 function ProfileModal({
   onClose,
@@ -510,10 +506,15 @@ function ProfileModal({
   isDark: boolean;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
 }) {
-  const { user, logout, updateName, updateEmail, sendVerificationCode, verifyCode, deleteAccount } = useAuthStore();
+  const { user, logout, updateName, updatePassword, sendVerificationCode, verifyCode, deleteAccount } = useAuthStore();
   const [view, setView] = useState<ProfileView>('main');
   const [newName, setNewName] = useState(user?.name || '');
-  const [newEmail, setNewEmail] = useState('');
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -536,6 +537,12 @@ function ProfileModal({
     setIsLoading(false);
     setTurnstileToken('');
     setDeleteConfirmText('');
+    setOldPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setShowOldPassword(false);
+    setShowNewPassword(false);
+    setShowConfirmPassword(false);
   }, []);
 
   const goBack = useCallback(() => {
@@ -575,44 +582,36 @@ function ProfileModal({
     setIsLoading(false);
   };
 
-  /* ─── Отправить код на новую почту ─── */
-  const handleSendEmailCode = async () => {
+  /* ─── Сменить пароль ─── */
+  const handleChangePassword = async () => {
     setError('');
-    if (!newEmail.trim()) { setError('Введи новый email'); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) { setError('Некорректный email'); return; }
-    const domain = newEmail.split('@')[1]?.toLowerCase();
-    if (!domain || !VALID_EMAIL_DOMAINS.includes(domain)) { setError('Используй настоящий email'); return; }
-    if (newEmail.toLowerCase() === user?.email?.toLowerCase()) { setError('Новый email совпадает с текущим'); return; }
-    if (!turnstileToken) { setError('Пройди проверку безопасности'); return; }
 
-    setIsLoading(true);
-    try {
-      const res = await sendVerificationCode(newEmail, turnstileToken);
-      if (res.success) {
-        setView('verifyEmail');
-        setCountdown(60);
-        setCode('');
-        setError('');
-      } else {
-        setError(res.error || 'Ошибка отправки кода');
-      }
-    } catch {
-      setError('Ошибка сети');
+    if (!oldPassword) {
+      setError('Введи текущий пароль');
+      return;
     }
-    setIsLoading(false);
-  };
+    if (!newPassword) {
+      setError('Введи новый пароль');
+      return;
+    }
+    if (newPassword.length < 6) {
+      setError('Новый пароль минимум 6 символов');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError('Пароли не совпадают');
+      return;
+    }
+    if (oldPassword === newPassword) {
+      setError('Новый пароль совпадает со старым');
+      return;
+    }
 
-  /* ─── Подтвердить новую почту ─── */
-  const handleVerifyNewEmail = async () => {
-    setError('');
-    if (code.length !== 6) { setError('Введи 6-значный код'); return; }
     setIsLoading(true);
     try {
-      const v = await verifyCode(newEmail, code);
-      if (!v.success) { setError(v.error || 'Неверный код'); setIsLoading(false); return; }
-      const res = await updateEmail(newEmail);
+      const res = await updatePassword(oldPassword, newPassword);
       if (res.success) {
-        setSuccess('Email обновлён');
+        setSuccess('Пароль обновлён');
         setTimeout(() => goBack(), 1200);
       } else {
         setError(res.error || 'Ошибка обновления');
@@ -630,7 +629,10 @@ function ProfileModal({
       setError('Напиши УДАЛИТЬ для подтверждения');
       return;
     }
-    if (!turnstileToken) { setError('Пройди проверку безопасности'); return; }
+    if (!turnstileToken) {
+      setError('Пройди проверку безопасности');
+      return;
+    }
     setIsLoading(true);
     try {
       const res = await sendVerificationCode(user?.email || '', turnstileToken);
@@ -651,11 +653,18 @@ function ProfileModal({
   /* ─── Удаление: подтвердить код ─── */
   const handleDeleteVerify = async () => {
     setError('');
-    if (code.length !== 6) { setError('Введи 6-значный код'); return; }
+    if (code.length !== 6) {
+      setError('Введи 6-значный код');
+      return;
+    }
     setIsLoading(true);
     try {
       const v = await verifyCode(user?.email || '', code);
-      if (!v.success) { setError(v.error || 'Неверный код'); setIsLoading(false); return; }
+      if (!v.success) {
+        setError(v.error || 'Неверный код');
+        setIsLoading(false);
+        return;
+      }
       const res = await deleteAccount();
       if (res.success) {
         onClose();
@@ -668,18 +677,55 @@ function ProfileModal({
     setIsLoading(false);
   };
 
-  /* ─── Повторная отправка кода ─── */
-  const handleResend = async (targetEmail: string) => {
+  /* ─── Повтор кода ─── */
+  const handleResend = async () => {
     if (countdown > 0) return;
     setIsLoading(true);
     setError('');
     try {
-      const res = await sendVerificationCode(targetEmail, turnstileToken || 'resend');
+      const res = await sendVerificationCode(user?.email || '', turnstileToken || 'resend');
       if (res.success) { setCountdown(60); setCode(''); }
       else setError(res.error || 'Ошибка');
     } catch { setError('Ошибка сети'); }
     setIsLoading(false);
   };
+
+  /* ─── Поле пароля с глазом ─── */
+  const PasswordField = ({
+    value,
+    onChange,
+    placeholder,
+    show,
+    toggleShow,
+    onKeyDown,
+  }: {
+    value: string;
+    onChange: (v: string) => void;
+    placeholder: string;
+    show: boolean;
+    toggleShow: () => void;
+    onKeyDown?: (e: React.KeyboardEvent) => void;
+  }) => (
+    <div className="relative">
+      <input
+        type={show ? 'text' : 'password'}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        onKeyDown={onKeyDown}
+        placeholder={placeholder}
+        className={`${inputClass} pr-12`}
+      />
+      <button
+        type="button"
+        onClick={toggleShow}
+        className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md transition-colors ${
+          isDark ? 'text-zinc-500 hover:text-zinc-300' : 'text-zinc-400 hover:text-zinc-600'
+        }`}
+      >
+        {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+      </button>
+    </div>
+  );
 
   return (
     <>
@@ -697,7 +743,6 @@ function ProfileModal({
           {/* ═══ ГЛАВНЫЙ ВИД ═══ */}
           {view === 'main' && (
             <motion.div key="main" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              {/* Шапка */}
               <div className={`flex items-center justify-between px-5 py-4 border-b ${isDark ? 'border-white/5' : 'border-zinc-100'}`}>
                 <h2 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-zinc-900'}`}>Профиль</h2>
                 <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={onClose} className={`p-1.5 rounded-md ${isDark ? 'hover:bg-white/10' : 'hover:bg-zinc-100'}`}>
@@ -706,7 +751,7 @@ function ProfileModal({
               </div>
 
               <div className="px-5 py-5 overflow-y-auto">
-                {/* Аватар + имя */}
+                {/* Аватар */}
                 <div className="flex items-center gap-4 mb-6">
                   <div className="relative group flex-shrink-0">
                     <img src={user?.avatar} alt={user?.name} className={`w-16 h-16 rounded-full object-cover border-2 ${isDark ? 'border-violet-500/30' : 'border-violet-300'}`} />
@@ -720,8 +765,9 @@ function ProfileModal({
                   </div>
                 </div>
 
-                {/* Кнопки редактирования */}
+                {/* Кнопки */}
                 <div className="space-y-2 mb-6">
+                  {/* Изменить имя */}
                   <button
                     onClick={() => { resetState(); setNewName(user?.name || ''); setView('editName'); }}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-left ${
@@ -740,20 +786,21 @@ function ProfileModal({
                     <Pencil className={`w-4 h-4 ${isDark ? 'text-zinc-600' : 'text-zinc-300'}`} />
                   </button>
 
+                  {/* Сменить пароль */}
                   <button
-                    onClick={() => { resetState(); setNewEmail(''); setView('editEmail'); }}
+                    onClick={() => { resetState(); setView('changePassword'); }}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-left ${
                       isDark
                         ? 'bg-white/[0.03] hover:bg-white/[0.06] border border-white/5'
                         : 'bg-zinc-50 hover:bg-zinc-100 border border-zinc-100'
                     }`}
                   >
-                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${isDark ? 'bg-blue-500/15' : 'bg-blue-50'}`}>
-                      <Mail className={`w-4 h-4 ${isDark ? 'text-blue-400' : 'text-blue-500'}`} />
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${isDark ? 'bg-amber-500/15' : 'bg-amber-50'}`}>
+                      <Lock className={`w-4 h-4 ${isDark ? 'text-amber-400' : 'text-amber-500'}`} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-zinc-900'}`}>Изменить email</p>
-                      <p className={`text-[11px] truncate ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>{user?.email}</p>
+                      <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-zinc-900'}`}>Сменить пароль</p>
+                      <p className={`text-[11px] ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>Обновить пароль аккаунта</p>
                     </div>
                     <Pencil className={`w-4 h-4 ${isDark ? 'text-zinc-600' : 'text-zinc-300'}`} />
                   </button>
@@ -770,7 +817,7 @@ function ProfileModal({
                   <span className="text-sm text-red-400 font-medium">Выйти из аккаунта</span>
                 </motion.button>
 
-                {/* Удалить аккаунт */}
+                {/* Удалить */}
                 <button
                   onClick={() => { resetState(); setView('deleteAccount'); }}
                   className={`w-full text-center text-xs py-2 transition-colors ${isDark ? 'text-zinc-600 hover:text-red-400' : 'text-zinc-400 hover:text-red-500'}`}
@@ -827,14 +874,14 @@ function ProfileModal({
             </motion.div>
           )}
 
-          {/* ═══ РЕДАКТИРОВАНИЕ EMAIL ═══ */}
-          {view === 'editEmail' && (
-            <motion.div key="editEmail" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+          {/* ═══ СМЕНА ПАРОЛЯ ═══ */}
+          {view === 'changePassword' && (
+            <motion.div key="changePassword" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <div className={`flex items-center gap-3 px-5 py-4 border-b ${isDark ? 'border-white/5' : 'border-zinc-100'}`}>
                 <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={goBack} className={`p-1.5 rounded-md ${isDark ? 'hover:bg-white/10' : 'hover:bg-zinc-100'}`}>
                   <ArrowLeft className={`w-4 h-4 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`} />
                 </motion.button>
-                <h2 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-zinc-900'}`}>Изменить email</h2>
+                <h2 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-zinc-900'}`}>Сменить пароль</h2>
               </div>
 
               <div className="px-5 py-5">
@@ -843,95 +890,96 @@ function ProfileModal({
                     <span className="text-sm text-red-400">{error}</span>
                   </motion.div>
                 )}
-
-                <div className={`px-4 py-3 rounded-xl mb-4 ${isDark ? 'bg-white/[0.03] border border-white/5' : 'bg-zinc-50 border border-zinc-100'}`}>
-                  <p className={`text-[11px] ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>Текущий email</p>
-                  <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-zinc-900'}`}>{user?.email}</p>
-                </div>
-
-                <label className={`text-xs font-medium mb-2 block ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>Новый email</label>
-                <input
-                  type="email"
-                  value={newEmail}
-                  onChange={e => setNewEmail(e.target.value)}
-                  placeholder="Новый email"
-                  className={`${inputClass} mb-4`}
-                  autoFocus
-                />
-
-                <div className="flex justify-center py-2 mb-4">
-                  <Turnstile
-                    siteKey={TURNSTILE_SITE_KEY}
-                    onSuccess={t => setTurnstileToken(t)}
-                    onError={() => setTurnstileToken('')}
-                    onExpire={() => setTurnstileToken('')}
-                    options={{ theme: isDark ? 'dark' : 'light', size: 'flexible' }}
-                  />
-                </div>
-
-                <motion.button
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.99 }}
-                  disabled={isLoading}
-                  onClick={handleSendEmailCode}
-                  className="w-full h-12 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white font-medium text-sm shadow-xl shadow-violet-500/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Отправить код подтверждения'}
-                </motion.button>
-              </div>
-            </motion.div>
-          )}
-
-          {/* ═══ ВЕРИФИКАЦИЯ НОВОГО EMAIL ═══ */}
-          {view === 'verifyEmail' && (
-            <motion.div key="verifyEmail" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-              <div className={`flex items-center gap-3 px-5 py-4 border-b ${isDark ? 'border-white/5' : 'border-zinc-100'}`}>
-                <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => { setView('editEmail'); setCode(''); setError(''); }} className={`p-1.5 rounded-md ${isDark ? 'hover:bg-white/10' : 'hover:bg-zinc-100'}`}>
-                  <ArrowLeft className={`w-4 h-4 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`} />
-                </motion.button>
-                <h2 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-zinc-900'}`}>Подтверждение</h2>
-              </div>
-
-              <div className="px-5 py-5">
-                <div className={`flex items-center gap-3 px-4 py-3 rounded-xl mb-5 ${isDark ? 'bg-violet-500/10 border border-violet-500/20' : 'bg-violet-50 border border-violet-200'}`}>
-                  <Shield className={`w-5 h-5 flex-shrink-0 ${isDark ? 'text-violet-400' : 'text-violet-500'}`} />
-                  <p className={`text-xs ${isDark ? 'text-violet-300' : 'text-violet-700'}`}>
-                    Код отправлен на <span className="font-semibold">{newEmail}</span>
-                  </p>
-                </div>
-
-                {error && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20">
-                    <span className="text-sm text-red-400">{error}</span>
-                  </motion.div>
-                )}
                 {success && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-4 px-4 py-3 rounded-xl bg-green-500/10 border border-green-500/20">
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mb-4 px-4 py-3 rounded-xl bg-green-500/10 border border-green-500/20">
                     <span className="text-sm text-green-400 flex items-center gap-2"><Check className="w-4 h-4" />{success}</span>
                   </motion.div>
                 )}
 
-                <div className="mb-5">
-                  <CodeInput code={code} setCode={setCode} isDark={isDark} />
+                <div className="space-y-4">
+                  <div>
+                    <label className={`text-xs font-medium mb-2 block ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>Текущий пароль</label>
+                    <PasswordField
+                      value={oldPassword}
+                      onChange={setOldPassword}
+                      placeholder="Введи текущий пароль"
+                      show={showOldPassword}
+                      toggleShow={() => setShowOldPassword(!showOldPassword)}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={`text-xs font-medium mb-2 block ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>Новый пароль</label>
+                    <PasswordField
+                      value={newPassword}
+                      onChange={setNewPassword}
+                      placeholder="Минимум 6 символов"
+                      show={showNewPassword}
+                      toggleShow={() => setShowNewPassword(!showNewPassword)}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={`text-xs font-medium mb-2 block ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>Повтори новый пароль</label>
+                    <PasswordField
+                      value={confirmPassword}
+                      onChange={setConfirmPassword}
+                      placeholder="Повтори пароль"
+                      show={showConfirmPassword}
+                      toggleShow={() => setShowConfirmPassword(!showConfirmPassword)}
+                      onKeyDown={e => { if (e.key === 'Enter') handleChangePassword(); }}
+                    />
+                  </div>
+
+                  {/* Индикатор надёжности */}
+                  {newPassword && (
+                    <div className="space-y-1.5">
+                      <div className="flex gap-1">
+                        {[1, 2, 3, 4].map(level => {
+                          const strength = getPasswordStrength(newPassword);
+                          return (
+                            <div
+                              key={level}
+                              className={`h-1 flex-1 rounded-full transition-all ${
+                                level <= strength
+                                  ? strength <= 1 ? 'bg-red-500' : strength <= 2 ? 'bg-orange-500' : strength <= 3 ? 'bg-yellow-500' : 'bg-green-500'
+                                  : isDark ? 'bg-white/10' : 'bg-zinc-200'
+                              }`}
+                            />
+                          );
+                        })}
+                      </div>
+                      <p className={`text-[11px] ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                        {getPasswordLabel(newPassword)}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Совпадение паролей */}
+                  {confirmPassword && (
+                    <div className={`flex items-center gap-2 text-xs ${
+                      newPassword === confirmPassword
+                        ? 'text-green-400'
+                        : isDark ? 'text-red-400' : 'text-red-500'
+                    }`}>
+                      {newPassword === confirmPassword ? (
+                        <><Check className="w-3.5 h-3.5" /> Пароли совпадают</>
+                      ) : (
+                        <><X className="w-3.5 h-3.5" /> Пароли не совпадают</>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <motion.button
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.99 }}
-                  disabled={isLoading || code.length !== 6}
-                  onClick={handleVerifyNewEmail}
-                  className="w-full h-12 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white font-medium text-sm shadow-xl shadow-violet-500/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2 mb-4"
+                  disabled={isLoading || !oldPassword || !newPassword || newPassword !== confirmPassword}
+                  onClick={handleChangePassword}
+                  className="w-full h-12 mt-5 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white font-medium text-sm shadow-xl shadow-violet-500/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Подтвердить'}
+                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Сменить пароль'}
                 </motion.button>
-
-                <div className="flex justify-end">
-                  <button onClick={() => handleResend(newEmail)} disabled={countdown > 0 || isLoading}
-                    className={`text-sm transition-colors ${countdown > 0 ? isDark ? 'text-zinc-600 cursor-not-allowed' : 'text-zinc-400 cursor-not-allowed' : 'text-violet-400 hover:text-violet-300'}`}
-                  >
-                    {countdown > 0 ? `Повторить через ${countdown}с` : 'Отправить снова'}
-                  </button>
-                </div>
               </div>
             </motion.div>
           )}
@@ -943,7 +991,7 @@ function ProfileModal({
                 <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={goBack} className={`p-1.5 rounded-md ${isDark ? 'hover:bg-white/10' : 'hover:bg-zinc-100'}`}>
                   <ArrowLeft className={`w-4 h-4 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`} />
                 </motion.button>
-                <h2 className={`text-sm font-semibold text-red-400`}>Удаление аккаунта</h2>
+                <h2 className="text-sm font-semibold text-red-400">Удаление аккаунта</h2>
               </div>
 
               <div className="px-5 py-5">
@@ -1037,7 +1085,7 @@ function ProfileModal({
                 </motion.button>
 
                 <div className="flex justify-end">
-                  <button onClick={() => handleResend(user?.email || '')} disabled={countdown > 0 || isLoading}
+                  <button onClick={handleResend} disabled={countdown > 0 || isLoading}
                     className={`text-sm transition-colors ${countdown > 0 ? isDark ? 'text-zinc-600 cursor-not-allowed' : 'text-zinc-400 cursor-not-allowed' : 'text-red-400 hover:text-red-300'}`}
                   >
                     {countdown > 0 ? `Повторить через ${countdown}с` : 'Отправить снова'}
@@ -1051,6 +1099,27 @@ function ProfileModal({
       </motion.div>
     </>
   );
+}
+
+/* ═══════════════════════════════════════════
+   Хелперы для пароля
+   ═══════════════════════════════════════════ */
+function getPasswordStrength(password: string): number {
+  let score = 0;
+  if (password.length >= 6) score++;
+  if (password.length >= 10) score++;
+  if (/[A-Z]/.test(password) && /[a-z]/.test(password)) score++;
+  if (/\d/.test(password)) score++;
+  if (/[^A-Za-z0-9]/.test(password)) score++;
+  return Math.min(score, 4);
+}
+
+function getPasswordLabel(password: string): string {
+  const s = getPasswordStrength(password);
+  if (s <= 1) return 'Слабый пароль';
+  if (s === 2) return 'Средний пароль';
+  if (s === 3) return 'Хороший пароль';
+  return 'Надёжный пароль';
 }
 
 /* ═══════════════════════════════════════════
@@ -1107,7 +1176,6 @@ function AuthModal({ onClose, isDark }: { onClose: () => void; isDark: boolean }
     if (!validateForm()) return;
     setIsLoading(true);
 
-    // Для обоих режимов — отправляем код
     try {
       const res = await sendVerificationCode(email, turnstileToken);
       if (res.success) {
@@ -1175,7 +1243,6 @@ function AuthModal({ onClose, isDark }: { onClose: () => void; isDark: boolean }
         <AnimatePresence mode="wait">
           {step === 'form' && (
             <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-6">
-              {/* Табы */}
               <div className={`flex rounded-xl p-1 mb-6 ${isDark ? 'bg-white/5' : 'bg-zinc-100'}`}>
                 {(['login', 'register'] as const).map(m => (
                   <button key={m} type="button" onClick={() => { setMode(m); setError(''); }}
@@ -1208,8 +1275,8 @@ function AuthModal({ onClose, isDark }: { onClose: () => void; isDark: boolean }
                     placeholder="Пароль"
                     className={`${inputClass} pr-12`}
                   />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className={`absolute right-4 top-1/2 -translate-y-1/2 ${isDark ? 'text-zinc-500 hover:text-zinc-300' : 'text-zinc-400 hover:text-zinc-600'} transition-colors`}>
-                    <span className="text-lg">{showPassword ? '🙈' : '👁'}</span>
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md transition-colors ${isDark ? 'text-zinc-500 hover:text-zinc-300' : 'text-zinc-400 hover:text-zinc-600'}`}>
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
 
