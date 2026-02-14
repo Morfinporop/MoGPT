@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { ChatState, Message, Chat } from '../types';
 import { DEFAULT_MODEL } from '../config/models';
+import { supabase } from '../services/supabaseClient';
 
 export type ResponseMode = 'normal' | 'code' | 'visual';
 export type RudenessMode = 'very_rude' | 'rude' | 'polite';
@@ -11,11 +12,14 @@ interface ExtendedChatState extends ChatState {
   rudenessMode: RudenessMode;
   selectedModel: string;
   generatingChatIds: Set<string>;
+  isSyncing: boolean;
   setResponseMode: (mode: ResponseMode) => void;
   setRudenessMode: (mode: RudenessMode) => void;
   setSelectedModel: (modelId: string) => void;
   setGeneratingChat: (chatId: string, value: boolean) => void;
   isCurrentChatGenerating: () => boolean;
+  syncToCloud: (userId: string) => Promise<void>;
+  syncFromCloud: (userId: string) => Promise<void>;
 }
 
 const createChat = (): Chat => ({
@@ -37,6 +41,7 @@ export const useChatStore = create<ExtendedChatState>()(
       rudenessMode: 'rude',
       selectedModel: DEFAULT_MODEL,
       generatingChatIds: new Set<string>(),
+      isSyncing: false,
 
       setResponseMode: (mode) => set({ responseMode: mode }),
       setRudenessMode: (mode) => set({ rudenessMode: mode }),
@@ -45,11 +50,8 @@ export const useChatStore = create<ExtendedChatState>()(
       setGeneratingChat: (chatId, value) => {
         set((state) => {
           const newSet = new Set(state.generatingChatIds);
-          if (value) {
-            newSet.add(chatId);
-          } else {
-            newSet.delete(chatId);
-          }
+          if (value) newSet.add(chatId);
+          else newSet.delete(chatId);
           return { generatingChatIds: newSet };
         });
       },
@@ -75,16 +77,13 @@ export const useChatStore = create<ExtendedChatState>()(
           const newCurrentId = state.currentChatId === id
             ? (newChats.length > 0 ? newChats[0].id : null)
             : state.currentChatId;
-          return {
-            chats: newChats,
-            currentChatId: newCurrentId,
-          };
+          return { chats: newChats, currentChatId: newCurrentId };
         });
+        // Удаляем из облака
+        supabase.from('chats').delete().eq('id', id).then(() => {});
       },
 
-      setCurrentChat: (id) => {
-        set({ currentChatId: id });
-      },
+      setCurrentChat: (id) => set({ currentChatId: id }),
 
       addMessage: (message) => {
         const msgId = crypto.randomUUID();
@@ -116,7 +115,6 @@ export const useChatStore = create<ExtendedChatState>()(
               const newTitle = chat.messages.length === 0 && message.role === 'user'
                 ? message.content.slice(0, 40) + (message.content.length > 40 ? '...' : '')
                 : chat.title;
-
               return {
                 ...chat,
                 title: newTitle,
@@ -151,11 +149,141 @@ export const useChatStore = create<ExtendedChatState>()(
       },
 
       setGenerating: (value) => set({ isGenerating: value }),
-
       toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
+
+      // ==========================================
+      // СИНХРОНИЗАЦИЯ С ОБЛАКОМ
+      // ==========================================
+
+      syncToCloud: async (userId: string) => {
+        const state = get();
+        set({ isSyncing: true });
+
+        try {
+          // Сохраняем настройки
+          await supabase
+            .from('user_preferences')
+            .upsert({
+              user_id: userId,
+              response_mode: state.responseMode,
+              rudeness_mode: state.rudenessMode,
+              selected_model: state.selectedModel,
+              updated_at: new Date().toISOString(),
+            });
+
+          // Сохраняем чаты (макс 30)
+          for (const chat of state.chats.slice(0, 30)) {
+            await supabase
+              .from('chats')
+              .upsert({
+                id: chat.id,
+                user_id: userId,
+                title: chat.title,
+                created_at: new Date(chat.createdAt).toISOString(),
+                updated_at: new Date(chat.updatedAt).toISOString(),
+              });
+
+            const msgs = chat.messages
+              .filter(m => !m.isLoading && m.content?.trim())
+              .slice(-50);
+
+            if (msgs.length > 0) {
+              await supabase.from('messages').upsert(
+                msgs.map(m => ({
+                  id: m.id,
+                  chat_id: chat.id,
+                  role: m.role,
+                  content: m.content,
+                  model: m.model || null,
+                  thinking: m.thinking || null,
+                  created_at: new Date(m.timestamp).toISOString(),
+                }))
+              );
+            }
+          }
+        } catch (e) {
+          console.error('Sync to cloud error:', e);
+        } finally {
+          set({ isSyncing: false });
+        }
+      },
+
+      syncFromCloud: async (userId: string) => {
+        set({ isSyncing: true });
+
+        try {
+          // Загружаем настройки
+          const { data: prefs } = await supabase
+            .from('user_preferences')
+            .select('*')
+            .eq('user_id', userId)
+            .maybeSingle();
+
+          if (prefs) {
+            set({
+              responseMode: (prefs.response_mode as ResponseMode) || 'normal',
+              rudenessMode: (prefs.rudeness_mode as RudenessMode) || 'rude',
+              selectedModel: prefs.selected_model || DEFAULT_MODEL,
+            });
+          }
+
+          // Загружаем чаты
+          const { data: cloudChats } = await supabase
+            .from('chats')
+            .select('*')
+            .eq('user_id', userId)
+            .order('updated_at', { ascending: false })
+            .limit(50);
+
+          if (cloudChats && cloudChats.length > 0) {
+            const chats: Chat[] = [];
+
+            for (const cc of cloudChats) {
+              const { data: cloudMessages } = await supabase
+                .from('messages')
+                .select('*')
+                .eq('chat_id', cc.id)
+                .order('created_at', { ascending: true })
+                .limit(100);
+
+              const messages: Message[] = (cloudMessages || []).map((m: any) => ({
+                id: m.id,
+                role: m.role,
+                content: m.content,
+                timestamp: new Date(m.created_at),
+                model: m.model,
+                thinking: m.thinking,
+                isLoading: false,
+              }));
+
+              chats.push({
+                id: cc.id,
+                title: cc.title,
+                messages,
+                createdAt: new Date(cc.created_at),
+                updatedAt: new Date(cc.updated_at),
+              });
+            }
+
+            // Мерджим: облачные + локальные
+            const state = get();
+            const localIds = new Set(state.chats.map(c => c.id));
+            const cloudOnly = chats.filter(c => !localIds.has(c.id));
+            const merged = [...state.chats, ...cloudOnly]
+              .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+              .slice(0, 50);
+
+            set({ chats: merged });
+          }
+        } catch (e) {
+          console.error('Sync from cloud error:', e);
+        } finally {
+          set({ isSyncing: false });
+        }
+      },
     }),
     {
-      name: 'mogpt-chats-v3',
+      name: 'mogpt-chats-v4',
       partialize: (state) => ({
         chats: state.chats.slice(0, 50).map(chat => ({
           ...chat,
