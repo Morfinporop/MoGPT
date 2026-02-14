@@ -6,39 +6,54 @@ import { useThemeStore } from '../store/themeStore';
 import { useState, useRef, useEffect } from 'react';
 import { Turnstile } from '@marsidev/react-turnstile';
 
-const TURNSTILE_KEY = '0x4AAAAAACa5EobYKh_TrmuZ';
-const DISCORD = 'https://discord.gg/qjnyAr7YXe';
-const DEF_AV = 'https://media.forgecdn.net/avatars/260/481/637214772494979032.png';
+const TURNSTILE_SITE_KEY = '0x4AAAAAACa5EobYKh_TrmuZ';
+const DISCORD_URL = 'https://discord.gg/qjnyAr7YXe';
 
-type Modal = 'terms' | 'privacy' | 'cookies' | 'profile' | 'auth' | null;
+type ModalType = 'terms' | 'privacy' | 'cookies' | 'profile' | 'auth' | null;
 
-const DOCS: Record<'terms'|'privacy'|'cookies', { title: string; items: { t: string; h?: string; text: string }[] }> = {
-  terms: { title: 'Условия', items: [
-    { t:'m', text:'Январь 2026' },
-    { t:'s', h:'1. Принятие', text:'Используя MoSeek, вы принимаете условия.' },
-    { t:'s', h:'2. Сервис', text:'AI-платформа для генерации текста и кода.' },
-    { t:'s', h:'3. Собственность', text:'MoSeek, MoGPT — интеллектуальная собственность.' },
-    { t:'i', text:'Нарушение авторских прав влечёт ответственность.' },
-    { t:'s', h:'4. Правила', text:'Запрещён вредоносный контент и взлом.' },
-    { t:'c', text:'© 2026 MoSeek' },
-  ]},
-  privacy: { title: 'Конфиденциальность', items: [
-    { t:'m', text:'Январь 2026' },
-    { t:'s', h:'1. Данные', text:'Имя, email, пароль (SHA-256).' },
-    { t:'i', text:'Мы НЕ собираем геолокацию, биометрию, финансы.' },
-    { t:'s', h:'2. Хранение', text:'Защищённая база + локальный кеш.' },
-    { t:'c', text:'© 2026 MoSeek' },
-  ]},
-  cookies: { title: 'Cookie', items: [
-    { t:'m', text:'Январь 2026' },
-    { t:'s', h:'1. Хранение', text:'Настройки и кеш в localStorage.' },
-    { t:'i', text:'Без рекламных трекеров.' },
-    { t:'c', text:'© 2026 MoSeek. Ваши данные — ваши.' },
-  ]},
+const MODAL_CONTENT: Record<'terms' | 'privacy' | 'cookies', { title: string; content: Array<{ type: string; title?: string; text: string }> }> = {
+  terms: {
+    title: 'Условия использования',
+    content: [
+      { type: 'meta', text: 'Последнее обновление: январь 2026' },
+      { type: 'section', title: '1. Принятие условий', text: 'Используя MoSeek и MoGPT, вы принимаете настоящие условия. Если не согласны — прекратите использование.' },
+      { type: 'section', title: '2. Сервис', text: 'MoSeek — AI-платформа. MoGPT — нейросеть от MoSeek. Генерация текста, код, ответы на вопросы, дизайн интерфейсов.' },
+      { type: 'section', title: '3. Собственность', text: '"MoSeek", "MoGPT", логотипы, дизайн, код — интеллектуальная собственность MoSeek. Копирование запрещено.' },
+      { type: 'important', text: 'Нарушение авторских прав влечёт ответственность по закону.' },
+      { type: 'section', title: '4. Правила', text: 'Запрещено: вредоносный контент, взлом, массовые запросы, нарушение прав третьих лиц.' },
+      { type: 'section', title: '5. Ответственность', text: 'Сервис «как есть». MoSeek не гарантирует бесперебойность и абсолютную точность.' },
+      { type: 'copyright', text: '© 2026 MoSeek. Все права защищены.' },
+    ]
+  },
+  privacy: {
+    title: 'Конфиденциальность',
+    content: [
+      { type: 'meta', text: 'Последнее обновление: январь 2026' },
+      { type: 'section', title: '1. Данные', text: 'Имя, email, пароль (SHA-256). Чаты синхронизируются в облаке между устройствами.' },
+      { type: 'important', text: 'Мы НЕ собираем: геолокацию, IP для слежки, биометрию, финансы.' },
+      { type: 'section', title: '2. Хранение', text: 'Данные в защищённой базе. Локальный кеш в браузере для быстродействия.' },
+      { type: 'section', title: '3. Права', text: 'Удаление данных, отзыв согласия, экспорт — по запросу.' },
+      { type: 'copyright', text: '© 2026 MoSeek. Все права защищены.' },
+    ]
+  },
+  cookies: {
+    title: 'Политика Cookie',
+    content: [
+      { type: 'meta', text: 'Последнее обновление: январь 2026' },
+      { type: 'section', title: '1. Хранение', text: 'Настройки, кеш чатов, токен авторизации — в localStorage браузера.' },
+      { type: 'important', text: 'Без рекламных Cookie, трекеров, fingerprinting.' },
+      { type: 'section', title: '2. Контроль', text: 'Очистка localStorage удаляет локальный кеш. Данные в облаке сохраняются.' },
+      { type: 'copyright', text: '© 2026 MoSeek. Ваши данные — ваша собственность.' },
+    ]
+  }
 };
 
-function Discord({ className }: { className?: string }) {
-  return <svg className={className} viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.095 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.095 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>;
+function DiscordIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.095 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.095 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+    </svg>
+  );
 }
 
 export function Sidebar() {
@@ -46,277 +61,615 @@ export function Sidebar() {
   const { user, isAuthenticated, logout, updateAvatar } = useAuthStore();
   const { theme, toggleTheme } = useThemeStore();
   const isDark = theme === 'dark';
-  const fRef = useRef<HTMLInputElement>(null);
-  const [modal, setModal] = useState<Modal>(null);
-  const [touch, setTouch] = useState(false);
-  const [extras, setExtras] = useState(false);
 
-  useEffect(() => { const c = () => setTouch('ontouchstart' in window || navigator.maxTouchPoints > 0); c(); window.addEventListener('resize', c); return () => window.removeEventListener('resize', c); }, []);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [activeModal, setActiveModal] = useState<ModalType>(null);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const [showHeaderExtras, setShowHeaderExtras] = useState(false);
 
-  const newChat = () => { const id = createNewChat(); if (id) setCurrentChat(id); toggleSidebar(); };
-  const delChat = (id: string) => { const idx = chats.findIndex(c => c.id === id); const rest = chats.filter(c => c.id !== id); deleteChat(id); if (currentChatId === id && rest.length) setCurrentChat(rest[Math.min(idx, rest.length - 1)].id); };
-  const onAv = (e: React.ChangeEvent<HTMLInputElement>) => { const f = e.target.files?.[0]; if (!f || f.size > 2*1024*1024) return; const r = new FileReader(); r.onload = ev => { const s = ev.target?.result as string; if (s) updateAvatar(s); }; r.readAsDataURL(f); e.target.value = ''; };
-  const av = () => user?.avatar || DEF_AV;
+  useEffect(() => {
+    const check = () => setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0 || window.matchMedia('(pointer: coarse)').matches);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
-  const modal_bg = isDark ? 'bg-[#111] border border-white/[0.06]' : 'bg-white border border-black/[0.06] shadow-xl';
-  const border = isDark ? 'border-white/[0.04]' : 'border-black/[0.04]';
+  const handleNewChat = () => {
+    const id = createNewChat();
+    if (id) setCurrentChat(id);
+    toggleSidebar();
+  };
+
+  const handleDeleteChat = (chatId: string) => {
+    const idx = chats.findIndex(c => c.id === chatId);
+    const remaining = chats.filter(c => c.id !== chatId);
+    deleteChat(chatId);
+    if (currentChatId === chatId && remaining.length > 0) {
+      setCurrentChat(remaining[Math.min(idx, remaining.length - 1)].id);
+    }
+  };
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || file.size > 2 * 1024 * 1024) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const result = ev.target?.result as string;
+      if (result) updateAvatar(result);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
 
   return (
     <AnimatePresence>
-      {sidebarOpen && (<>
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }} onClick={toggleSidebar} className="fixed inset-0 bg-black/40 z-40" />
-        <motion.aside initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }} transition={{ type: 'spring', damping: 30, stiffness: 400 }}
-          className={`fixed left-0 top-0 bottom-0 w-[272px] z-50 flex flex-col ${isDark ? 'bg-[#0a0a0a] border-r border-white/[0.04]' : 'bg-[#fafafa] border-r border-black/[0.04]'}`}
-        >
-          {/* Head */}
-          <div className={`border-b ${border}`}>
-            <div className="flex items-center justify-between px-4 py-3.5">
-              <button onClick={() => setExtras(!extras)} className={`flex items-center gap-1 text-[15px] font-semibold ${isDark ? 'text-white' : 'text-black'}`}>
-                Меню <ChevronDown className={`w-3.5 h-3.5 ${isDark ? 'text-zinc-500' : 'text-zinc-400'} transition-transform ${extras ? 'rotate-180' : ''}`} />
-              </button>
-              <button onClick={toggleSidebar} className={`p-1.5 rounded-lg ${isDark ? 'hover:bg-white/[0.06]' : 'hover:bg-black/[0.04]'}`}>
-                <X className={`w-4.5 h-4.5 ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`} />
-              </button>
-            </div>
-            <AnimatePresence>
-              {extras && (
-                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.12 }} className="overflow-hidden">
-                  <div className="flex gap-2 px-4 pb-3">
-                    <a href={DISCORD} target="_blank" rel="noopener noreferrer"
-                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[12px] font-medium ${isDark ? 'glass-card text-[#5865F2] hover:bg-white/[0.06]' : 'bg-[#5865F2]/5 text-[#5865F2] hover:bg-[#5865F2]/10'}`}
-                    ><Discord className="w-3.5 h-3.5" />Discord</a>
-                    <button onClick={toggleTheme}
-                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[12px] font-medium ${isDark ? 'glass-card text-zinc-300 hover:bg-white/[0.06]' : 'bg-black/[0.03] text-zinc-600 hover:bg-black/[0.05]'}`}
-                    >{isDark ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}{isDark ? 'Светлая' : 'Тёмная'}</button>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+      {sidebarOpen && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.1 }}
+            onClick={toggleSidebar}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+          />
 
-          {/* New */}
-          <div className="p-2.5">
-            <button onClick={newChat} className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-[13px] font-medium transition-colors ${isDark ? 'glass-card hover:bg-white/[0.06] text-white' : 'bg-white border border-black/[0.06] text-black shadow-sm hover:bg-black/[0.02]'}`}>
-              <Plus className={`w-4.5 h-4.5 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`} /> Новый чат
-            </button>
-          </div>
-
-          {/* List */}
-          <div className="flex-1 overflow-y-auto px-2.5 space-y-px">
-            {!chats.length ? (
-              <div className="text-center py-14">
-                <MessageSquare className={`w-8 h-8 mx-auto mb-2 ${isDark ? 'text-zinc-700' : 'text-zinc-300'}`} />
-                <p className={`text-[12px] ${isDark ? 'text-zinc-600' : 'text-zinc-400'}`}>Нет чатов</p>
-              </div>
-            ) : chats.map(chat => {
-              const a = currentChatId === chat.id;
-              return (
-                <div key={chat.id} className={`group flex items-center rounded-lg transition-colors cursor-pointer ${a ? isDark ? 'bg-white/[0.06]' : 'bg-white shadow-sm' : isDark ? 'hover:bg-white/[0.03]' : 'hover:bg-black/[0.02]'}`}>
-                  <button onClick={() => { setCurrentChat(chat.id); toggleSidebar(); }} className="flex-1 min-w-0 text-left px-3 py-2">
-                    <div className="flex items-center gap-2">
-                      <MessageSquare className={`w-3.5 h-3.5 flex-shrink-0 ${a ? isDark ? 'text-white' : 'text-black' : isDark ? 'text-zinc-600' : 'text-zinc-400'}`} />
-                      <span className={`text-[13px] truncate ${a ? isDark ? 'text-white' : 'text-black' : isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>{chat.title}</span>
-                    </div>
-                  </button>
-                  <button onClick={e => { e.stopPropagation(); delChat(chat.id); }}
-                    className={`p-1.5 mr-1 rounded-md transition-all ${isDark ? 'hover:bg-red-500/10' : 'hover:bg-red-50'} ${touch ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
-                  ><Trash2 className="w-3 h-3 text-red-400" /></button>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Bottom */}
-          <div className={`p-3.5 border-t ${border}`}>
-            {isAuthenticated ? (
-              <div onClick={() => setModal('profile')} className={`flex items-center gap-2.5 px-2 py-2 rounded-lg cursor-pointer mb-3 ${isDark ? 'hover:bg-white/[0.04]' : 'hover:bg-black/[0.02]'}`}>
-                <img src={av()} alt="" className="w-9 h-9 rounded-full object-cover" />
-                <div className="min-w-0 flex-1">
-                  <p className={`text-[13px] font-medium truncate ${isDark ? 'text-white' : 'text-black'}`}>{user?.name}</p>
-                  <p className={`text-[11px] truncate ${isDark ? 'text-zinc-600' : 'text-zinc-400'}`}>{user?.email}</p>
-                </div>
-              </div>
-            ) : (
-              <div className="mb-3">
-                <div className="flex items-center gap-2.5 px-2 py-2 mb-2">
-                  <img src={DEF_AV} alt="" className="w-9 h-9 rounded-full object-cover" />
-                  <div><p className={`text-[13px] ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>Гость</p><p className={`text-[10px] ${isDark ? 'text-zinc-600' : 'text-zinc-400'}`}>Безлимит</p></div>
-                </div>
-                <button onClick={() => setModal('auth')} className={`w-full py-2 rounded-lg text-[13px] font-medium ${isDark ? 'bg-white text-black hover:bg-zinc-200' : 'bg-black text-white hover:bg-zinc-800'}`}>Войти</button>
-              </div>
-            )}
-            <div className="flex gap-2.5 text-[9px] px-1">
-              {(['terms','privacy','cookies'] as const).map((k, i) => (
-                <span key={k} className="contents">
-                  {i > 0 && <span className={isDark ? 'text-zinc-700' : 'text-zinc-300'}>·</span>}
-                  <button onClick={() => setModal(k)} className={isDark ? 'text-zinc-600 hover:text-zinc-400' : 'text-zinc-400 hover:text-zinc-600'}>{k === 'terms' ? 'Terms' : k === 'privacy' ? 'Privacy' : 'Cookies'}</button>
-                </span>
-              ))}
-            </div>
-          </div>
-        </motion.aside>
-      </>)}
-
-      <input ref={fRef} type="file" accept="image/*" onChange={onAv} className="hidden" />
-
-      {/* Profile */}
-      <AnimatePresence>
-        {modal === 'profile' && (<>
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setModal(null)} className="fixed inset-0 bg-black/50 z-[60]" />
-          <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
-            className={`fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[320px] rounded-2xl z-[70] ${modal_bg}`}
+          <motion.aside
+            initial={{ x: -320, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: -320, opacity: 0 }}
+            transition={{ type: 'spring', damping: 35, stiffness: 500 }}
+            className={`fixed left-0 top-0 bottom-0 w-72 z-50 flex flex-col border-r ${
+              isDark
+                ? 'bg-[#0a0a0f]/95 backdrop-blur-xl border-white/5'
+                : 'bg-white/95 backdrop-blur-xl border-zinc-200'
+            }`}
           >
-            <div className={`flex items-center justify-between px-5 py-3.5 border-b ${border}`}>
-              <span className={`text-[14px] font-semibold ${isDark ? 'text-white' : 'text-black'}`}>Профиль</span>
-              <button onClick={() => setModal(null)}><X className={`w-4 h-4 ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`} /></button>
-            </div>
-            <div className="px-5 py-5">
-              <div className="flex items-center gap-3.5 mb-5">
-                <div className="relative group">
-                  <img src={av()} alt="" className="w-14 h-14 rounded-full object-cover" />
-                  <button onClick={() => fRef.current?.click()} className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><Camera className="w-4 h-4 text-white" /></button>
-                </div>
-                <div className="min-w-0">
-                  <p className={`text-[14px] font-semibold truncate ${isDark ? 'text-white' : 'text-black'}`}>{user?.name}</p>
-                  <p className={`text-[11px] truncate ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>{user?.email}</p>
-                </div>
+            {/* Шапка — текст "Меню" + стрелочка */}
+            <div className={`border-b ${isDark ? 'border-white/5' : 'border-zinc-100'}`}>
+              <div className="flex items-center justify-between p-4">
+                <button
+                  onClick={() => setShowHeaderExtras(!showHeaderExtras)}
+                  className={`flex items-center gap-1.5 text-lg font-semibold transition-colors ${
+                    isDark ? 'text-white hover:text-violet-400' : 'text-zinc-900 hover:text-violet-600'
+                  }`}
+                >
+                  Меню
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${
+                    isDark ? 'text-zinc-500' : 'text-zinc-400'
+                  } ${showHeaderExtras ? 'rotate-180' : ''}`} />
+                </button>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={toggleSidebar}
+                  className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-white/10' : 'hover:bg-zinc-100'}`}
+                >
+                  <X className={`w-5 h-5 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`} />
+                </motion.button>
               </div>
-              <button onClick={() => { logout(); setModal(null); }}
-                className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-medium ${isDark ? 'bg-red-500/8 text-red-400 hover:bg-red-500/12 border border-red-500/10' : 'bg-red-50 text-red-500 hover:bg-red-100 border border-red-100'}`}
-              ><LogOut className="w-4 h-4" />Выйти</button>
+
+              {/* Скрытые кнопки — Discord + Тема */}
+              <AnimatePresence>
+                {showHeaderExtras && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
+                  >
+                    <div className={`flex items-center gap-2 px-4 pb-3 ${
+                      isDark ? 'bg-white/[0.02]' : 'bg-zinc-50/50'
+                    }`}>
+                      <motion.a
+                        href={DISCORD_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-all ${
+                          isDark
+                            ? 'bg-[#5865F2]/10 border border-[#5865F2]/20 text-[#5865F2] hover:bg-[#5865F2]/20'
+                            : 'bg-[#5865F2]/5 border border-[#5865F2]/15 text-[#5865F2] hover:bg-[#5865F2]/10'
+                        }`}
+                      >
+                        <DiscordIcon className="w-4 h-4" />
+                        <span className="font-medium">Discord</span>
+                      </motion.a>
+
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={toggleTheme}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-all ${
+                          isDark
+                            ? 'bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20'
+                            : 'bg-violet-500/5 border border-violet-500/15 text-violet-500 hover:bg-violet-500/10'
+                        }`}
+                      >
+                        {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                        <span className="font-medium">{isDark ? 'Светлая' : 'Тёмная'}</span>
+                      </motion.button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
-          </motion.div>
-        </>)}
+
+            {/* Новый чат */}
+            <div className="p-3">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleNewChat}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                  isDark
+                    ? 'bg-gradient-to-r from-violet-500/20 to-purple-500/20 border border-violet-500/30 hover:border-violet-500/50 text-violet-300'
+                    : 'bg-violet-50 border border-violet-200 hover:border-violet-300 text-violet-600'
+                }`}
+              >
+                <Plus className="w-5 h-5" />
+                <span className="text-sm font-medium">Новый чат</span>
+              </motion.button>
+            </div>
+
+            {/* Список чатов */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-1">
+              {chats.length === 0 ? (
+                <div className="text-center py-8">
+                  <MessageSquare className={`w-12 h-12 mx-auto mb-3 ${isDark ? 'text-zinc-700' : 'text-zinc-300'}`} />
+                  <p className={`text-sm ${isDark ? 'text-zinc-600' : 'text-zinc-400'}`}>Нет чатов</p>
+                  <p className={`text-xs mt-1 ${isDark ? 'text-zinc-700' : 'text-zinc-400'}`}>Начни новый диалог</p>
+                </div>
+              ) : (
+                chats.map((chat) => {
+                  const isActive = currentChatId === chat.id;
+                  return (
+                    <motion.div
+                      key={chat.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className={`group relative rounded-xl transition-all cursor-pointer ${
+                        isActive
+                          ? isDark ? 'bg-violet-500/15 border border-violet-500/30' : 'bg-violet-50 border border-violet-200'
+                          : isDark ? 'hover:bg-white/5 border border-transparent' : 'hover:bg-zinc-50 border border-transparent'
+                      }`}
+                    >
+                      <div className="flex items-center">
+                        <button
+                          onClick={() => { setCurrentChat(chat.id); toggleSidebar(); }}
+                          className="flex-1 min-w-0 text-left px-3 py-2.5"
+                        >
+                          <div className="flex items-center gap-2">
+                            <MessageSquare className={`w-4 h-4 flex-shrink-0 ${
+                              isActive
+                                ? isDark ? 'text-violet-400' : 'text-violet-500'
+                                : isDark ? 'text-zinc-600' : 'text-zinc-400'
+                            }`} />
+                            <p className={`text-sm truncate max-w-[140px] ${
+                              isActive
+                                ? isDark ? 'text-white' : 'text-zinc-900'
+                                : isDark ? 'text-zinc-400' : 'text-zinc-600'
+                            }`}>
+                              {chat.title}
+                            </p>
+                          </div>
+                        </button>
+
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={(e) => { e.stopPropagation(); handleDeleteChat(chat.id); }}
+                          className={`flex-shrink-0 p-2 mr-1 rounded-lg transition-all ${
+                            isDark ? 'hover:bg-red-500/20' : 'hover:bg-red-50'
+                          } ${isTouchDevice ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                        >
+                          <Trash2 className="w-4 h-4 text-red-400" />
+                        </motion.button>
+                      </div>
+                    </motion.div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Нижняя панель */}
+            <div className={`p-4 border-t ${isDark ? 'border-white/5' : 'border-zinc-100'}`}>
+              {isAuthenticated ? (
+                <div
+                  onClick={() => setActiveModal('profile')}
+                  className={`flex items-center gap-3 px-2 py-2 rounded-xl cursor-pointer mb-4 transition-colors ${
+                    isDark ? 'hover:bg-white/5' : 'hover:bg-zinc-50'
+                  }`}
+                >
+                  <img
+                    src={user?.avatar}
+                    alt={user?.name}
+                    className={`w-10 h-10 rounded-full flex-shrink-0 object-cover border-2 ${
+                      isDark ? 'border-violet-500/30' : 'border-violet-300'
+                    }`}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium truncate ${isDark ? 'text-white' : 'text-zinc-900'}`}>{user?.name}</p>
+                    <p className={`text-[11px] truncate ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>{user?.email}</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="mb-4">
+                  <div className="flex items-center gap-3 px-2 py-2 mb-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      isDark ? 'bg-zinc-800 border border-white/5' : 'bg-zinc-100 border border-zinc-200'
+                    }`}>
+                      <span className="text-zinc-500 text-sm">👤</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>Гость</p>
+                      <p className={`text-[11px] ${isDark ? 'text-zinc-600' : 'text-zinc-400'}`}>Безлимитный доступ</p>
+                    </div>
+                  </div>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setActiveModal('auth')}
+                    className={`w-full py-2.5 rounded-xl text-sm font-medium transition-all ${
+                      isDark
+                        ? 'bg-gradient-to-r from-violet-500/20 to-purple-500/20 border border-violet-500/30 text-violet-300 hover:border-violet-500/50'
+                        : 'bg-violet-50 border border-violet-200 text-violet-600 hover:bg-violet-100'
+                    }`}
+                  >
+                    Войти / Регистрация
+                  </motion.button>
+                </div>
+              )}
+
+              <div className="flex items-center gap-3 text-[10px] pl-1">
+                <button onClick={() => setActiveModal('terms')} className={`transition-colors ${isDark ? 'text-zinc-500 hover:text-violet-400' : 'text-zinc-400 hover:text-violet-500'}`}>
+                  Terms of Use
+                </button>
+                <span className={isDark ? 'text-zinc-700' : 'text-zinc-300'}>•</span>
+                <button onClick={() => setActiveModal('privacy')} className={`transition-colors ${isDark ? 'text-zinc-500 hover:text-violet-400' : 'text-zinc-400 hover:text-violet-500'}`}>
+                  Privacy Policy
+                </button>
+                <span className={isDark ? 'text-zinc-700' : 'text-zinc-300'}>•</span>
+                <button onClick={() => setActiveModal('cookies')} className={`transition-colors ${isDark ? 'text-zinc-500 hover:text-violet-400' : 'text-zinc-400 hover:text-violet-500'}`}>
+                  Cookies
+                </button>
+              </div>
+            </div>
+          </motion.aside>
+        </>
+      )}
+
+      <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
+
+      {/* Профиль */}
+      <AnimatePresence>
+        {activeModal === 'profile' && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setActiveModal(null)} className="fixed inset-0 bg-black/80 backdrop-blur-md z-[60]" />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className={`fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] rounded-2xl z-[70] overflow-hidden border ${
+                isDark ? 'bg-[#0f0f15] border-white/10' : 'bg-white border-zinc-200'
+              }`}
+            >
+              <div className={`flex items-center justify-between px-5 py-4 border-b ${isDark ? 'border-white/5' : 'border-zinc-100'}`}>
+                <h2 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-zinc-900'}`}>Профиль</h2>
+                <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => setActiveModal(null)} className={`p-1.5 rounded-md ${isDark ? 'hover:bg-white/10' : 'hover:bg-zinc-100'}`}>
+                  <X className={`w-4 h-4 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`} />
+                </motion.button>
+              </div>
+              <div className="px-5 py-6">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="relative group flex-shrink-0">
+                    <img src={user?.avatar} alt={user?.name} className={`w-16 h-16 rounded-full object-cover border-2 ${isDark ? 'border-violet-500/30' : 'border-violet-300'}`} />
+                    <button onClick={() => fileInputRef.current?.click()} className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Camera className="w-5 h-5 text-white" />
+                    </button>
+                  </div>
+                  <div className="min-w-0">
+                    <p className={`text-base font-semibold truncate ${isDark ? 'text-white' : 'text-zinc-900'}`}>{user?.name}</p>
+                    <p className={`text-xs truncate ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>{user?.email}</p>
+                  </div>
+                </div>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => { logout(); setActiveModal(null); }}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition-all"
+                >
+                  <LogOut className="w-4 h-4 text-red-400" />
+                  <span className="text-sm text-red-400 font-medium">Выйти из аккаунта</span>
+                </motion.button>
+              </div>
+            </motion.div>
+          </>
+        )}
       </AnimatePresence>
 
-      {/* Auth */}
-      <AnimatePresence>{modal === 'auth' && <Auth onClose={() => setModal(null)} isDark={isDark} />}</AnimatePresence>
-
-      {/* Docs */}
+      {/* Авторизация */}
       <AnimatePresence>
-        {modal && modal !== 'profile' && modal !== 'auth' && (<>
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setModal(null)} className="fixed inset-0 bg-black/50 z-[60]" />
-          <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
-            className={`fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[440px] max-w-[calc(100vw-32px)] max-h-[80vh] rounded-2xl z-[70] flex flex-col ${modal_bg}`}
-          >
-            <div className={`flex items-center justify-between px-5 py-3.5 border-b ${border}`}>
-              <span className={`text-[14px] font-bold ${isDark ? 'text-white' : 'text-black'}`}>{DOCS[modal].title}</span>
-              <button onClick={() => setModal(null)}><X className={`w-4 h-4 ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`} /></button>
-            </div>
-            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
-              {DOCS[modal].items.map((b, i) => {
-                if (b.t === 'm') return <p key={i} className={`text-[10px] italic ${isDark ? 'text-zinc-600' : 'text-zinc-400'}`}>{b.text}</p>;
-                if (b.t === 'c') return <p key={i} className={`text-[10px] pt-2 mt-3 border-t ${isDark ? 'text-zinc-600 border-white/[0.04]' : 'text-zinc-400 border-black/[0.04]'}`}>{b.text}</p>;
-                if (b.t === 'i') return <div key={i} className={`px-3 py-2.5 rounded-lg text-[11px] font-medium ${isDark ? 'glass-card text-zinc-300' : 'bg-zinc-100 text-zinc-700'}`}>{b.text}</div>;
-                return <div key={i}><h3 className={`text-[12px] font-semibold mb-1 ${isDark ? 'text-white' : 'text-black'}`}>{b.h}</h3><p className={`text-[11px] leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>{b.text}</p></div>;
-              })}
-            </div>
-            <div className={`px-5 py-3.5 border-t ${border}`}>
-              <button onClick={() => setModal(null)} className={`w-full py-2.5 rounded-xl text-[13px] font-medium ${isDark ? 'bg-white text-black hover:bg-zinc-200' : 'bg-black text-white hover:bg-zinc-800'}`}>Понятно</button>
-            </div>
-          </motion.div>
-        </>)}
+        {activeModal === 'auth' && <AuthModal onClose={() => setActiveModal(null)} isDark={isDark} />}
+      </AnimatePresence>
+
+      {/* Документы */}
+      <AnimatePresence>
+        {activeModal && activeModal !== 'profile' && activeModal !== 'auth' && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setActiveModal(null)} className="fixed inset-0 bg-black/80 backdrop-blur-md z-[60]" />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className={`fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[480px] max-w-[calc(100vw-32px)] max-h-[85vh] rounded-2xl z-[70] flex flex-col overflow-hidden border ${
+                isDark ? 'bg-[#0f0f15] border-white/10' : 'bg-white border-zinc-200'
+              }`}
+            >
+              <div className={`flex items-center justify-between px-6 py-4 border-b ${isDark ? 'border-white/5' : 'border-zinc-100'}`}>
+                <h2 className={`text-base font-bold ${isDark ? 'text-white' : 'text-zinc-900'}`}>{MODAL_CONTENT[activeModal].title}</h2>
+                <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => setActiveModal(null)} className={`p-1.5 rounded-md ${isDark ? 'hover:bg-white/10' : 'hover:bg-zinc-100'}`}>
+                  <X className={`w-4 h-4 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`} />
+                </motion.button>
+              </div>
+              <div className="flex-1 overflow-y-auto px-6 py-5">
+                <div className="space-y-4">
+                  {MODAL_CONTENT[activeModal].content.map((block, i) => {
+                    if (block.type === 'meta') return <p key={i} className={`text-[11px] italic ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>{block.text}</p>;
+                    if (block.type === 'copyright') return <p key={i} className={`text-[11px] font-medium pt-3 mt-4 border-t ${isDark ? 'text-zinc-600 border-white/5' : 'text-zinc-400 border-zinc-100'}`}>{block.text}</p>;
+                    if (block.type === 'important') return (
+                      <div key={i} className={`px-4 py-3 rounded-xl ${isDark ? 'bg-violet-500/10 border border-violet-500/20' : 'bg-violet-50 border border-violet-200'}`}>
+                        <p className={`text-[12px] leading-relaxed font-medium ${isDark ? 'text-violet-300' : 'text-violet-700'}`}>{block.text}</p>
+                      </div>
+                    );
+                    return (
+                      <div key={i}>
+                        <h3 className={`text-[13px] font-semibold mb-1.5 ${isDark ? 'text-white' : 'text-zinc-900'}`}>{block.title}</h3>
+                        <p className={`text-[12px] leading-[1.7] ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>{block.text}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className={`px-6 py-4 border-t ${isDark ? 'border-white/5' : 'border-zinc-100'}`}>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setActiveModal(null)}
+                  className={`w-full py-3 rounded-xl text-sm font-medium transition-all ${
+                    isDark
+                      ? 'bg-violet-500/20 border border-violet-500/30 text-violet-300 hover:bg-violet-500/30'
+                      : 'bg-violet-50 border border-violet-200 text-violet-600 hover:bg-violet-100'
+                  }`}
+                >
+                  Понятно
+                </motion.button>
+              </div>
+            </motion.div>
+          </>
+        )}
       </AnimatePresence>
     </AnimatePresence>
   );
 }
 
-// ===== AUTH =====
-function Auth({ onClose, isDark }: { onClose: () => void; isDark: boolean }) {
-  const [mode, setMode] = useState<'login'|'register'>('login');
-  const [step, setStep] = useState<'form'|'verify'>('form');
-  const [name, setName] = useState(''); const [email, setEmail] = useState(''); const [pw, setPw] = useState('');
-  const [showPw, setShowPw] = useState(false); const [code, setCode] = useState(''); const [err, setErr] = useState('');
-  const [loading, setLoading] = useState(false); const [token, setToken] = useState(''); const [cd, setCd] = useState(0);
-  const cRef = useRef<(HTMLInputElement|null)[]>([]);
+// ==========================================
+// AuthModal — минимализм
+// ==========================================
+type AuthStep = 'form' | 'verify';
+
+function AuthModal({ onClose, isDark }: { onClose: () => void; isDark: boolean }) {
+  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [step, setStep] = useState<AuthStep>('form');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [code, setCode] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const [countdown, setCountdown] = useState(0);
+  const codeInputsRef = useRef<(HTMLInputElement | null)[]>([]);
+
   const { register, login, sendVerificationCode, verifyCode } = useAuthStore();
 
-  useEffect(() => { if (cd > 0) { const t = setTimeout(() => setCd(cd - 1), 1000); return () => clearTimeout(t); } }, [cd]);
+  useEffect(() => {
+    if (countdown > 0) { const t = setTimeout(() => setCountdown(countdown - 1), 1000); return () => clearTimeout(t); }
+  }, [countdown]);
 
-  const inp = `w-full h-11 px-3.5 rounded-lg text-[13px] glass-input ${isDark ? 'text-white placeholder-zinc-500' : 'text-black placeholder-zinc-400'}`;
+  const inputClass = `w-full h-12 px-4 rounded-xl text-sm focus:outline-none transition-all ${
+    isDark
+      ? 'bg-white/5 border border-white/10 text-white placeholder-zinc-500 focus:border-violet-500/50 focus:bg-white/10'
+      : 'bg-zinc-50 border border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-violet-400 focus:bg-white'
+  }`;
 
-  const onSubmit = async () => {
-    setErr('');
-    if (!email.trim()) { setErr('Введи email'); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setErr('Некорректный email'); return; }
+  const handleSubmit = async () => {
+    setError('');
+    if (!email.trim()) { setError('Введи email'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError('Некорректный email'); return; }
+
     if (mode === 'register') {
-      if (!name.trim() || name.trim().length < 2) { setErr('Имя короткое'); return; }
-      if (!pw || pw.length < 6) { setErr('Пароль мин. 6 символов'); return; }
-      const DOMS = ['gmail.com','yahoo.com','outlook.com','hotmail.com','mail.ru','yandex.ru','ya.ru','icloud.com','protonmail.com','proton.me','bk.ru','inbox.ru','list.ru','rambler.ru','live.com','aol.com','zoho.com','gmx.com','tutanota.com','fastmail.com','me.com','mac.com','msn.com','qq.com','163.com','ukr.net','i.ua','meta.ua','email.ua','bigmir.net'];
-      const d = email.split('@')[1]?.toLowerCase();
-      if (!d || !DOMS.includes(d)) { setErr('Используй настоящий email'); return; }
-    } else { if (!pw) { setErr('Введи пароль'); return; } }
-    if (!token) { setErr('Пройди проверку'); return; }
-    setLoading(true);
-    if (mode === 'login') { try { const r = await login(email, pw); if (!r.success) { setErr(r.error || 'Ошибка'); setLoading(false); return; } setLoading(false); onClose(); } catch { setErr('Ошибка сети'); setLoading(false); } return; }
-    try { const r = await sendVerificationCode(email, token); if (r.success) { setStep('verify'); setCd(60); setCode(''); setErr(''); setTimeout(() => cRef.current[0]?.focus(), 100); } else setErr(r.error || 'Ошибка'); } catch { setErr('Ошибка сети'); } setLoading(false);
+      if (!name.trim() || name.trim().length < 2) { setError('Имя слишком короткое'); return; }
+      if (!password || password.length < 6) { setError('Пароль минимум 6 символов'); return; }
+      const DOMAINS = ['gmail.com','yahoo.com','outlook.com','hotmail.com','mail.ru','yandex.ru','ya.ru','icloud.com','protonmail.com','proton.me','bk.ru','inbox.ru','list.ru','rambler.ru','live.com','aol.com','zoho.com','gmx.com','tutanota.com','fastmail.com','me.com','mac.com','msn.com','qq.com','163.com','ukr.net','i.ua','meta.ua','email.ua','bigmir.net'];
+      const domain = email.split('@')[1]?.toLowerCase();
+      if (!domain || !DOMAINS.includes(domain)) { setError('Используй настоящий email'); return; }
+    } else {
+      if (!password) { setError('Введи пароль'); return; }
+    }
+
+    if (!turnstileToken) { setError('Пройди проверку безопасности'); return; }
+
+    setIsLoading(true);
+
+    if (mode === 'login') {
+      try {
+        const res = await login(email, password);
+        if (!res.success) { setError(res.error || 'Ошибка входа'); setIsLoading(false); return; }
+        setIsLoading(false); onClose();
+      } catch { setError('Ошибка сети'); setIsLoading(false); }
+      return;
+    }
+
+    try {
+      const res = await sendVerificationCode(email, turnstileToken);
+      if (res.success) { setStep('verify'); setCountdown(60); setCode(''); setError(''); setTimeout(() => codeInputsRef.current[0]?.focus(), 100); }
+      else setError(res.error || 'Ошибка отправки кода');
+    } catch { setError('Ошибка сети'); }
+    setIsLoading(false);
   };
 
-  const onVerify = async () => {
-    setErr(''); if (code.length !== 6) { setErr('6 цифр'); return; } setLoading(true);
-    try { const v = await verifyCode(email, code); if (!v.success) { setErr(v.error || 'Неверный код'); setLoading(false); return; } const r = await register(name, email, pw); if (!r.success) { setErr(r.error || 'Ошибка'); setLoading(false); return; } setLoading(false); onClose(); }
-    catch { setErr('Ошибка сети'); setLoading(false); }
+  const handleVerify = async () => {
+    setError('');
+    if (code.length !== 6) { setError('Введи 6-значный код'); return; }
+    setIsLoading(true);
+    try {
+      const v = await verifyCode(email, code);
+      if (!v.success) { setError(v.error || 'Неверный код'); setIsLoading(false); return; }
+      const r = await register(name, email, password);
+      if (!r.success) { setError(r.error || 'Ошибка регистрации'); setIsLoading(false); return; }
+      setIsLoading(false); onClose();
+    } catch { setError('Ошибка сети'); setIsLoading(false); }
   };
 
-  const onCC = (i: number, v: string) => { if (v.length > 1) v = v[v.length-1]; if (!/^\d*$/.test(v)) return; const a = code.split(''); while(a.length<6)a.push(''); a[i]=v; setCode(a.join('').slice(0,6)); if(v&&i<5)cRef.current[i+1]?.focus(); };
-  const onCK = (i: number, e: React.KeyboardEvent) => { if(e.key==='Backspace'&&!code[i]&&i>0)cRef.current[i-1]?.focus(); };
-  const onPaste = (e: React.ClipboardEvent) => { e.preventDefault(); const p=e.clipboardData.getData('text').replace(/\D/g,'').slice(0,6); setCode(p); cRef.current[Math.min(p.length,5)]?.focus(); };
-  const resend = async () => { if(cd>0)return; setLoading(true); setErr(''); try{const r=await sendVerificationCode(email,token||'r'); if(r.success){setCd(60);setCode('');}else setErr(r.error||'Ошибка');}catch{setErr('Ошибка');} setLoading(false); };
+  const handleCodeChange = (i: number, v: string) => {
+    if (v.length > 1) v = v[v.length - 1];
+    if (!/^\d*$/.test(v)) return;
+    const arr = code.split(''); while (arr.length < 6) arr.push('');
+    arr[i] = v; setCode(arr.join('').slice(0, 6));
+    if (v && i < 5) codeInputsRef.current[i + 1]?.focus();
+  };
 
-  const modal_bg = isDark ? 'bg-[#111] border border-white/[0.06]' : 'bg-white border border-black/[0.06] shadow-xl';
+  const handleCodeKey = (i: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !code[i] && i > 0) codeInputsRef.current[i - 1]?.focus();
+  };
 
-  return (<>
-    <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={onClose} className="fixed inset-0 bg-black/50 z-[60]" />
-    <motion.div initial={{opacity:0,scale:0.96}} animate={{opacity:1,scale:1}} exit={{opacity:0,scale:0.96}}
-      className={`fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] max-w-[calc(100vw-32px)] rounded-2xl z-[70] overflow-hidden ${modal_bg}`}
-    >
-      <AnimatePresence mode="wait">
-        {step === 'form' && (
-          <motion.div key="f" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="p-5">
-            <div className={`flex rounded-lg p-0.5 mb-5 ${isDark ? 'glass-card' : 'bg-[#f2f2f2]'}`}>
-              {(['login','register'] as const).map(m => (
-                <button key={m} onClick={() => { setMode(m); setErr(''); }}
-                  className={`flex-1 py-2 rounded-md text-[13px] font-medium transition-colors ${mode === m ? isDark ? 'bg-white/[0.1] text-white' : 'bg-white text-black shadow-sm' : isDark ? 'text-zinc-400' : 'text-zinc-500'}`}
-                >{m === 'login' ? 'Вход' : 'Регистрация'}</button>
-              ))}
-            </div>
-            {err && <div className={`mb-3 px-3 py-2 rounded-lg text-[12px] ${isDark ? 'bg-red-500/8 text-red-400 border border-red-500/10' : 'bg-red-50 text-red-500 border border-red-100'}`}>{err}</div>}
-            <div className="space-y-2.5">
-              {mode === 'register' && <input type="text" value={name} onChange={e=>setName(e.target.value)} placeholder="Имя" className={inp} />}
-              <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email" className={inp} />
-              <div className="relative">
-                <input type={showPw?'text':'password'} value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')onSubmit();}} placeholder="Пароль" className={`${inp} pr-11`} />
-                <button type="button" onClick={()=>setShowPw(!showPw)} className={`absolute right-3 top-1/2 -translate-y-1/2 text-base ${isDark?'text-zinc-500':'text-zinc-400'}`}>{showPw?'🙈':'👁'}</button>
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const p = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    setCode(p); codeInputsRef.current[Math.min(p.length, 5)]?.focus();
+  };
+
+  const handleResend = async () => {
+    if (countdown > 0) return;
+    setIsLoading(true); setError('');
+    try {
+      const res = await sendVerificationCode(email, turnstileToken || 'resend');
+      if (res.success) { setCountdown(60); setCode(''); }
+      else setError(res.error || 'Ошибка');
+    } catch { setError('Ошибка сети'); }
+    setIsLoading(false);
+  };
+
+  return (
+    <>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="fixed inset-0 bg-black/80 backdrop-blur-md z-[60]" />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        className={`fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] max-w-[calc(100vw-32px)] rounded-2xl z-[70] overflow-hidden border ${
+          isDark ? 'bg-[#0f0f15] border-white/10' : 'bg-white border-zinc-200'
+        }`}
+      >
+        <AnimatePresence mode="wait">
+          {step === 'form' && (
+            <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-6">
+              {/* Табы */}
+              <div className={`flex rounded-xl p-1 mb-6 ${isDark ? 'bg-white/5' : 'bg-zinc-100'}`}>
+                {(['login', 'register'] as const).map(m => (
+                  <button key={m} type="button" onClick={() => { setMode(m); setError(''); }}
+                    className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                      mode === m ? 'bg-violet-500 text-white shadow-lg' : isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'
+                    }`}
+                  >
+                    {m === 'login' ? 'Вход' : 'Регистрация'}
+                  </button>
+                ))}
               </div>
-              <div className="flex justify-center py-1"><Turnstile siteKey={TURNSTILE_KEY} onSuccess={t=>setToken(t)} onError={()=>setToken('')} onExpire={()=>setToken('')} options={{theme:isDark?'dark':'light',size:'flexible'}} /></div>
-              <button disabled={loading} onClick={onSubmit}
-                className={`w-full h-11 rounded-lg text-[13px] font-medium disabled:opacity-40 flex items-center justify-center gap-2 ${isDark?'bg-white text-black hover:bg-zinc-200':'bg-black text-white hover:bg-zinc-800'}`}
-              >{loading?<Loader2 className="w-4 h-4 animate-spin"/>:mode==='login'?'Войти':'Далее'}</button>
-            </div>
-          </motion.div>
-        )}
-        {step === 'verify' && (
-          <motion.div key="v" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="p-5">
-            <p className={`text-[13px] text-center mb-4 ${isDark?'text-zinc-400':'text-zinc-500'}`}>Код → <span className={isDark?'text-white':'text-black'}>{email}</span></p>
-            {err && <div className={`mb-3 px-3 py-2 rounded-lg text-[12px] ${isDark?'bg-red-500/8 text-red-400 border border-red-500/10':'bg-red-50 text-red-500 border border-red-100'}`}>{err}</div>}
-            <div className="flex justify-center gap-1.5 mb-5" onPaste={onPaste}>
-              {Array.from({length:6}).map((_,i)=>(
-                <input key={i} ref={el=>{cRef.current[i]=el;}} type="text" inputMode="numeric" maxLength={1} value={code[i]||''}
-                  onChange={e=>onCC(i,e.target.value)} onKeyDown={e=>onCK(i,e)}
-                  className={`w-11 h-12 text-center text-lg font-bold rounded-lg glass-input ${isDark?'text-white':'text-black'}`}
-                />
-              ))}
-            </div>
-            <button disabled={loading||code.length!==6} onClick={onVerify}
-              className={`w-full h-11 rounded-lg text-[13px] font-medium disabled:opacity-40 flex items-center justify-center gap-2 mb-3 ${isDark?'bg-white text-black hover:bg-zinc-200':'bg-black text-white hover:bg-zinc-800'}`}
-            >{loading?<Loader2 className="w-4 h-4 animate-spin"/>:'Подтвердить'}</button>
-            <div className="flex justify-between">
-              <button onClick={()=>{setStep('form');setCode('');setErr('');}} className={`text-[12px] ${isDark?'text-zinc-500':'text-zinc-400'}`}>← Назад</button>
-              <button onClick={resend} disabled={cd>0} className={`text-[12px] ${cd>0?isDark?'text-zinc-600':'text-zinc-400':'text-white'}`}>{cd>0?`${cd}с`:'Ещё раз'}</button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
-  </>);
+
+              {error && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mb-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20">
+                  <span className="text-sm text-red-400">{error}</span>
+                </motion.div>
+              )}
+
+              <div className="space-y-4">
+                {mode === 'register' && <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Имя" className={inputClass} />}
+                <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" className={inputClass} />
+                <div className="relative">
+                  <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleSubmit(); }} placeholder="Пароль" className={`${inputClass} pr-12`} />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className={`absolute right-4 top-1/2 -translate-y-1/2 ${isDark ? 'text-zinc-500 hover:text-zinc-300' : 'text-zinc-400 hover:text-zinc-600'} transition-colors`}>
+                    <span className="text-lg">{showPassword ? '🙈' : '👁'}</span>
+                  </button>
+                </div>
+
+                {/* Cloudflare */}
+                <div className="flex justify-center py-2">
+                  <Turnstile
+                    siteKey={TURNSTILE_SITE_KEY}
+                    onSuccess={t => setTurnstileToken(t)}
+                    onError={() => setTurnstileToken('')}
+                    onExpire={() => setTurnstileToken('')}
+                    options={{ theme: isDark ? 'dark' : 'light', size: 'flexible' }}
+                  />
+                </div>
+
+                <motion.button type="button" disabled={isLoading} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }} onClick={handleSubmit}
+                  className="w-full h-12 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white font-medium text-sm shadow-xl shadow-violet-500/20 hover:shadow-violet-500/40 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>{mode === 'login' ? 'Войти' : 'Продолжить'}</span>}
+                </motion.button>
+              </div>
+            </motion.div>
+          )}
+
+          {step === 'verify' && (
+            <motion.div key="verify" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-6">
+              <p className={`text-sm text-center mb-5 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                Код отправлен на <span className={isDark ? 'text-white' : 'text-zinc-900'}>{email}</span>
+              </p>
+
+              {error && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20">
+                  <span className="text-sm text-red-400">{error}</span>
+                </motion.div>
+              )}
+
+              <div className="flex justify-center gap-2 mb-6" onPaste={handlePaste}>
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <input key={i} ref={el => { codeInputsRef.current[i] = el; }} type="text" inputMode="numeric" maxLength={1} value={code[i] || ''}
+                    onChange={e => handleCodeChange(i, e.target.value)} onKeyDown={e => handleCodeKey(i, e)}
+                    className={`w-12 h-14 text-center text-xl font-bold rounded-xl focus:outline-none transition-all ${
+                      isDark ? 'bg-white/5 border border-white/10 text-white focus:border-violet-500 focus:bg-white/10' : 'bg-zinc-50 border border-zinc-200 text-zinc-900 focus:border-violet-400 focus:bg-white'
+                    }`}
+                  />
+                ))}
+              </div>
+
+              <motion.button type="button" disabled={isLoading || code.length !== 6} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }} onClick={handleVerify}
+                className="w-full h-12 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white font-medium text-sm shadow-xl shadow-violet-500/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2 mb-4"
+              >
+                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Подтвердить'}
+              </motion.button>
+
+              <div className="flex items-center justify-between">
+                <button type="button" onClick={() => { setStep('form'); setCode(''); setError(''); }} className={`text-sm ${isDark ? 'text-zinc-500 hover:text-zinc-300' : 'text-zinc-400 hover:text-zinc-600'} transition-colors`}>
+                  ← Назад
+                </button>
+                <button type="button" onClick={handleResend} disabled={countdown > 0 || isLoading}
+                  className={`text-sm transition-colors ${countdown > 0 ? isDark ? 'text-zinc-600 cursor-not-allowed' : 'text-zinc-400 cursor-not-allowed' : 'text-violet-400 hover:text-violet-300'}`}
+                >
+                  {countdown > 0 ? `Повторить через ${countdown}с` : 'Отправить снова'}
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    </>
+  );
 }
