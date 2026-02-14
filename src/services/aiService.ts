@@ -2,6 +2,7 @@ import type { Message } from '../types';
 import type { ResponseMode, RudenessMode } from '../store/chatStore';
 import { OPENROUTER_API_URL } from '../config/models';
 import { DEFAULT_MODEL } from '../config/models';
+import { memoryService } from './memoryService';
 
 const _0x = [115,107,45,111,114,45,118,49,45];
 const _1x = [48,97,54,57,53,99,52,50,54,53,52,50,56,55,50,98,57,54,100,102,97,97,98,55,51,98,53,53,98,54,49,55,57,50,53,52,56,56,54,99,55,99,52,97,100,52,102,98,100,53,48,56,101,102,48,48,49,97,50,97,100,100,99,52];
@@ -105,6 +106,9 @@ const LANGUAGE_MAP: Record<string, { name: string; native: string; endPunctuatio
   am: { name: 'амхарский', native: 'አማርኛ', endPunctuation: '።!?', direction: 'ltr' },
 };
 
+// ================================================
+// DeepContextAnalyzer
+// ================================================
 class DeepContextAnalyzer {
   private memory: ConversationContext = {
     messageCount: 0,
@@ -374,17 +378,13 @@ class DeepContextAnalyzer {
     return 'casual';
   }
 
-  private analyzeUserBehavior(current: string, allMessages: Message[], lang: string): ConversationContext['userBehavior'] {
+  private analyzeUserBehavior(current: string, _allMessages: Message[], _lang: string): ConversationContext['userBehavior'] {
     const lower = current.toLowerCase();
 
     if (/^(тест|проверка|ты\s*тут|работаешь|алло|\.+|test|hello\??|hey|hi|ping|yo)$/i.test(current.trim())) return 'testing';
-
     if (/напиши|создай|сделай|помоги|исправь|почини|код|write|create|make|build|help|fix|code|写|作成|만들어|schreib|erstell|écris|escribe|scrivi/i.test(lower)) return 'working';
-
     if (/объясни|расскажи|как\s*работает|что\s*такое|почему|зачем|гайд|туториал|explain|how does|what is|why|guide|tutorial|解释|教えて|説明|설명|알려줘|erkläre|explique|spiega/i.test(lower)) return 'learning';
-
     if (/устал|грустно|бесит|заебало|плохо|tired|sad|frustrated|can't anymore|累了|疲れた|지쳤/i.test(lower)) return 'venting';
-
     if (/привет|здарова|как\s*дела|что\s*нового|пошути|hi|hello|hey|what's up|how are you|你好|こんにちは|안녕|hallo|salut|hola|ciao|olá/i.test(lower)) return 'chatting';
 
     return 'exploring';
@@ -461,6 +461,9 @@ class DeepContextAnalyzer {
   }
 }
 
+// ================================================
+// Helpers
+// ================================================
 function getCurrentDateTime(): string {
   const now = new Date();
   const year = now.getFullYear();
@@ -472,6 +475,9 @@ function getCurrentDateTime(): string {
   return `${dayName}, ${day} ${month} ${year} года, ${hours}:${minutes < 10 ? '0' + minutes : minutes}`;
 }
 
+// ================================================
+// IntelligentPromptBuilder
+// ================================================
 class IntelligentPromptBuilder {
   build(
     userInput: string,
@@ -479,17 +485,24 @@ class IntelligentPromptBuilder {
     mode: ResponseMode,
     rudeness: RudenessMode,
     history: Message[],
-    specialCase?: 'empty' | 'forbidden'
+    specialCase?: 'empty' | 'forbidden',
+    memoryBlock?: string
   ): string {
     const sections: string[] = [];
 
     sections.push(this.buildCoreRules(context));
     sections.push(this.buildContextAwareness());
     sections.push(this.buildMultilingualRules(context));
+
+    // ПАМЯТЬ НЕЙРОСЕТИ — вставляется сюда
+    if (memoryBlock && memoryBlock.trim()) {
+      sections.push(memoryBlock);
+    }
+
     sections.push(this.buildIdentity(rudeness, mode, context));
     sections.push(this.buildResponseLength(userInput, context, mode));
     sections.push(this.buildCompletionRules(context));
-    sections.push(this.buildAntiWater(context));
+    sections.push(this.buildAntiWater());
     sections.push(this.buildGrammarRules(rudeness, context));
     sections.push(this.buildPersonalAddress(context));
     sections.push(this.buildRudenessDefinition(rudeness, context));
@@ -497,7 +510,7 @@ class IntelligentPromptBuilder {
     sections.push(this.buildKnowledgeBase());
     sections.push(this.buildAntiRepetition(context));
     sections.push(this.buildUserErrorHandling(rudeness, context));
-    sections.push(this.buildCommunicationStyle(rudeness, context));
+    sections.push(this.buildCommunicationStyle(context));
     sections.push(this.buildSituationInstructions(userInput, context, history, specialCase));
 
     if (mode === 'code' || mode === 'visual') {
@@ -614,7 +627,7 @@ Every sentence ends with proper punctuation: ${endPunct.split('').join(' ')}
 Every list completed. Every code block \`\`\` closed. If too long — shorten but do NOT break off. Last sentence MUST be syntactically complete. NEVER end on unfinished word, comma, colon, dash, open parenthesis.`;
   }
 
-  private buildAntiWater(context: ConversationContext): string {
+  private buildAntiWater(): string {
     return `NO FILLER:
 
 Each sentence must add NEW information. Delete if it doesn't.
@@ -695,7 +708,7 @@ Areas: internet culture (brainrot, mewing, sigma, skibidi, rizz, aura, mogging, 
     return 'User made errors. Mock briefly and move to answer.';
   }
 
-  private buildCommunicationStyle(rudeness: RudenessMode, context: ConversationContext): string {
+  private buildCommunicationStyle(context: ConversationContext): string {
     const parts: string[] = [];
 
     if (context.communicationStyle === 'slang') parts.push(`User uses slang — respond in kind using ${context.detectedLanguageNative} slang.`);
@@ -711,9 +724,9 @@ Areas: internet culture (brainrot, mewing, sigma, skibidi, rizz, aura, mogging, 
   }
 
   private buildSituationInstructions(
-    userInput: string,
+    _userInput: string,
     context: ConversationContext,
-    history: Message[],
+    _history: Message[],
     specialCase?: string
   ): string {
     const ins: string[] = [];
@@ -832,6 +845,9 @@ Language mixing: Do NOT insert other languages into ${context.detectedLanguageNa
   }
 }
 
+// ================================================
+// ResponseCleaner
+// ================================================
 class ResponseCleaner {
   clean(text: string, language: string): string {
     let cleaned = text;
@@ -913,7 +929,7 @@ class ResponseCleaner {
     return trimmed;
   }
 
-  private removeTrailingWater(text: string, language: string): string {
+  private removeTrailingWater(text: string, _language: string): string {
     const waterPatterns = [
       /\n*(?:Надеюсь|Если\s+(?:у\s+тебя|что|есть|нужн)|Обращайся|Удачи|Успехов|Пиши\s+если|Спрашивай|Не\s+стесняйся)[^.!?。！？]*[.!?。！？]?\s*$/i,
       /\n*(?:В\s+(?:итоге|заключение|общем)|Подводя\s+итог|Резюмируя|Таким\s+образом)[^.!?。！？]*[.!?。！？]?\s*$/i,
@@ -986,10 +1002,18 @@ class ResponseCleaner {
   }
 }
 
+// ================================================
+// IntelligentAIService — с памятью
+// ================================================
 class IntelligentAIService {
   private contextAnalyzer = new DeepContextAnalyzer();
   private promptBuilder = new IntelligentPromptBuilder();
   private responseCleaner = new ResponseCleaner();
+  private currentUserId: string | null = null;
+
+  setUserId(userId: string | null): void {
+    this.currentUserId = userId;
+  }
 
   async generateResponse(
     messages: Message[],
@@ -1012,7 +1036,20 @@ class IntelligentAIService {
 
       const selectedModel = modelId || DEFAULT_MODEL;
 
-      const systemPrompt = this.promptBuilder.build(userInput, context, mode, rudeness, messages, specialCase);
+      // ===== ЗАГРУЗКА ПАМЯТИ =====
+      let memoryBlock = '';
+      if (this.currentUserId) {
+        try {
+          memoryBlock = await memoryService.buildMemoryPrompt(this.currentUserId);
+        } catch (e) {
+          console.error('Memory load error:', e);
+        }
+      }
+
+      const systemPrompt = this.promptBuilder.build(
+        userInput, context, mode, rudeness, messages, specialCase, memoryBlock
+      );
+
       const maxTokens = this.calcTokens(userInput, context, mode, isEmpty);
       const temperature = this.calcTemp(userInput, context, mode, rudeness, specialCase);
       const formattedHistory = this.formatHistory(messages, context);
@@ -1040,10 +1077,25 @@ class IntelligentAIService {
       }
 
       if (apiResponse.finishReason === 'length' && /```/.test(apiResponse.content)) {
-        return await this.continueCode(apiResponse.content, systemPrompt, formattedHistory, selectedModel, maxTokens, temperature, context.detectedLanguage);
+        const result = await this.continueCode(
+          apiResponse.content, systemPrompt, formattedHistory,
+          selectedModel, maxTokens, temperature, context.detectedLanguage
+        );
+
+        // Сохраняем в память
+        if (this.currentUserId && userInput) {
+          memoryService.analyzeAndStore(this.currentUserId, userInput, result.content, messages);
+        }
+
+        return result;
       }
 
       const cleaned = this.responseCleaner.clean(apiResponse.content, context.detectedLanguage);
+
+      // ===== СОХРАНЕНИЕ В ПАМЯТЬ =====
+      if (this.currentUserId && userInput) {
+        memoryService.analyzeAndStore(this.currentUserId, userInput, cleaned, messages);
+      }
 
       return { content: cleaned };
 
