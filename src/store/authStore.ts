@@ -31,7 +31,7 @@ interface AuthState {
   verifyCode: (email: string, code: string) => Promise<{ success: boolean; error?: string }>;
   updateAvatar: (avatar: string) => void;
   updateName: (newName: string) => Promise<{ success: boolean; error?: string }>;
-  updateEmail: (newEmail: string) => Promise<{ success: boolean; error?: string }>;
+  updatePassword: (oldPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
   deleteAccount: () => Promise<{ success: boolean; error?: string }>;
 }
 
@@ -145,7 +145,6 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true });
 
         try {
-          // Проверяем, не занято ли имя
           const { data: existingName } = await supabase
             .from('users')
             .select('id')
@@ -157,7 +156,6 @@ export const useAuthStore = create<AuthState>()(
             return { success: false, error: 'Это имя уже занято' };
           }
 
-          // Обновляем в Supabase
           const { error: updateError } = await supabase
             .from('users')
             .update({ name: trimmedName })
@@ -168,7 +166,6 @@ export const useAuthStore = create<AuthState>()(
             return { success: false, error: 'Ошибка обновления. Попробуй ещё раз' };
           }
 
-          // Обновляем аватар на основе нового имени
           const newAvatar = state.user.avatar.includes('dicebear.com')
             ? generateAvatar(trimmedName)
             : state.user.avatar;
@@ -194,65 +191,64 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      updateEmail: async (newEmail: string) => {
+      updatePassword: async (oldPassword: string, newPassword: string) => {
         const state = get();
         if (!state.user) {
           return { success: false, error: 'Не авторизован' };
         }
 
-        const normalizedEmail = newEmail.toLowerCase().trim();
-
-        if (!normalizedEmail) {
-          return { success: false, error: 'Введи email' };
+        if (!oldPassword) {
+          return { success: false, error: 'Введи текущий пароль' };
         }
 
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(normalizedEmail)) {
-          return { success: false, error: 'Некорректный email' };
+        if (!newPassword) {
+          return { success: false, error: 'Введи новый пароль' };
         }
 
-        if (!isValidEmailDomain(normalizedEmail)) {
-          return { success: false, error: 'Используй настоящий email' };
+        if (newPassword.length < 6) {
+          return { success: false, error: 'Новый пароль минимум 6 символов' };
         }
 
-        if (normalizedEmail === state.user.email.toLowerCase()) {
-          return { success: false, error: 'Новый email совпадает с текущим' };
+        if (oldPassword === newPassword) {
+          return { success: false, error: 'Новый пароль совпадает со старым' };
         }
 
         set({ isLoading: true });
 
         try {
-          // Проверяем, не занят ли email
-          const { data: existingEmail } = await supabase
+          const oldHash = await hashPassword(oldPassword);
+
+          // Проверяем старый пароль
+          const { data: found, error: fetchError } = await supabase
             .from('users')
-            .select('id')
-            .eq('email', normalizedEmail)
-            .neq('id', state.user.id)
+            .select('password_hash')
+            .eq('id', state.user.id)
             .maybeSingle();
 
-          if (existingEmail) {
-            return { success: false, error: 'Этот email уже используется другим аккаунтом' };
+          if (fetchError || !found) {
+            return { success: false, error: 'Ошибка проверки. Попробуй ещё раз' };
           }
 
-          // Обновляем в Supabase
+          if (found.password_hash !== oldHash) {
+            return { success: false, error: 'Неверный текущий пароль' };
+          }
+
+          // Хешируем и сохраняем новый пароль
+          const newHash = await hashPassword(newPassword);
+
           const { error: updateError } = await supabase
             .from('users')
-            .update({ email: normalizedEmail })
+            .update({ password_hash: newHash })
             .eq('id', state.user.id);
 
           if (updateError) {
-            console.error('Update email error:', updateError);
+            console.error('Update password error:', updateError);
             return { success: false, error: 'Ошибка обновления. Попробуй ещё раз' };
           }
 
-          set((s) => ({
-            user: s.user ? { ...s.user, email: normalizedEmail } : null,
-            isLoading: false,
-          }));
-
           return { success: true };
         } catch (e) {
-          console.error('Update email error:', e);
+          console.error('Update password error:', e);
           return { success: false, error: 'Ошибка сети. Проверь интернет' };
         } finally {
           set({ isLoading: false });
@@ -270,13 +266,11 @@ export const useAuthStore = create<AuthState>()(
         try {
           const userId = state.user.id;
 
-          // Удаляем настройки пользователя
           await supabase
             .from('user_preferences')
             .delete()
             .eq('user_id', userId);
 
-          // Удаляем память/контекст пользователя (если есть таблица)
           await supabase
             .from('user_memory')
             .delete()
@@ -284,7 +278,6 @@ export const useAuthStore = create<AuthState>()(
             .then(() => {})
             .catch(() => {});
 
-          // Удаляем чаты пользователя (если есть таблица)
           await supabase
             .from('chat_messages')
             .delete()
@@ -299,7 +292,6 @@ export const useAuthStore = create<AuthState>()(
             .then(() => {})
             .catch(() => {});
 
-          // Удаляем самого пользователя
           const { error: deleteError } = await supabase
             .from('users')
             .delete()
@@ -310,7 +302,6 @@ export const useAuthStore = create<AuthState>()(
             return { success: false, error: 'Ошибка удаления. Попробуй ещё раз' };
           }
 
-          // Очищаем локальное состояние
           aiService.setUserId(null);
 
           set({
@@ -320,13 +311,12 @@ export const useAuthStore = create<AuthState>()(
             guestMessages: 0,
           });
 
-          // Очищаем localStorage от данных пользователя
           try {
             localStorage.removeItem('moseek-auth-v2');
             localStorage.removeItem('moseek-chats');
             sessionStorage.removeItem('moseek_pending_codes');
           } catch {
-            // игнорируем
+            // ignore
           }
 
           return { success: true };
@@ -438,7 +428,6 @@ export const useAuthStore = create<AuthState>()(
           const normalizedEmail = email.toLowerCase().trim();
           const trimmedName = name.trim();
 
-          // Проверяем email в Supabase
           const { data: existingEmail } = await supabase
             .from('users')
             .select('id')
@@ -449,7 +438,6 @@ export const useAuthStore = create<AuthState>()(
             return { success: false, error: 'Этот email уже зарегистрирован' };
           }
 
-          // Проверяем имя
           const { data: existingName } = await supabase
             .from('users')
             .select('id')
@@ -463,7 +451,6 @@ export const useAuthStore = create<AuthState>()(
           const passwordHash = await hashPassword(password);
           const avatar = generateAvatar(trimmedName);
 
-          // Записываем в Supabase
           const { data: newUser, error: insertError } = await supabase
             .from('users')
             .insert({
@@ -480,7 +467,6 @@ export const useAuthStore = create<AuthState>()(
             return { success: false, error: 'Ошибка регистрации. Попробуй ещё раз' };
           }
 
-          // Создаём настройки
           await supabase
             .from('user_preferences')
             .insert({
@@ -498,7 +484,6 @@ export const useAuthStore = create<AuthState>()(
             createdAt: new Date(newUser.created_at).getTime(),
           };
 
-          // Устанавливаем userId в aiService для памяти
           aiService.setUserId(user.id);
 
           set({
@@ -522,7 +507,6 @@ export const useAuthStore = create<AuthState>()(
           const normalizedEmail = email.toLowerCase().trim();
           const passwordHash = await hashPassword(password);
 
-          // Ищем в Supabase
           const { data: found, error } = await supabase
             .from('users')
             .select('*')
@@ -545,7 +529,6 @@ export const useAuthStore = create<AuthState>()(
             createdAt: new Date(found.created_at).getTime(),
           };
 
-          // Устанавливаем userId в aiService для памяти
           aiService.setUserId(user.id);
 
           set({
