@@ -1,13 +1,29 @@
+import { useEffect } from 'react';
 import { Background } from './components/Background';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { ChatContainer } from './components/ChatContainer';
 import { ChatInput } from './components/ChatInput';
 import { useThemeStore } from './store/themeStore';
+import { useAuthStore } from './store/authStore';
+import { useChatStore } from './store/chatStore';
+import { aiService } from './services/aiService';
 
 export function App() {
   const { theme } = useThemeStore();
   const isDark = theme === 'dark';
+  const { user, isAuthenticated } = useAuthStore();
+  const { syncFromCloud } = useChatStore();
+
+  // При входе — устанавливаем userId для памяти и синхронизируем чаты
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      aiService.setUserId(user.id);
+      syncFromCloud(user.id);
+    } else {
+      aiService.setUserId(null);
+    }
+  }, [isAuthenticated, user?.id]);
 
   return (
     <div className={`relative min-h-screen overflow-hidden ${isDark ? 'bg-[#050508]' : 'bg-[#f5f5f7]'}`}>
