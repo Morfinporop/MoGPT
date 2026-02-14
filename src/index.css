@@ -245,11 +245,11 @@ button:focus {
 }
 
 .prose pre {
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(139, 92, 246, 0.2);
-  border-radius: 12px;
-  padding: 1rem;
-  margin: 1rem 0;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
   overflow-x: auto;
   font-size: 0.875rem;
 }
@@ -270,16 +270,9 @@ button:focus {
   font-weight: 400;
 }
 
-.code-block-wrapper {
-  position: relative;
-}
-
-.code-block-wrapper pre {
-  margin: 0;
-}
-
-.copy-code-btn {
-  cursor: pointer;
+.prose code::before,
+.prose code::after {
+  content: none !important;
 }
 
 .prose blockquote {
@@ -333,6 +326,74 @@ button:focus {
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   pointer-events: none;
+}
+
+/* ─── Блоки кода (CodeBlock компонент) ─── */
+.code-block-container {
+  background: #0d0d1a;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+}
+
+.code-block-container pre {
+  margin: 0 !important;
+  padding: 1rem !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+}
+
+.code-block-container code {
+  font-size: 0.875rem !important;
+  line-height: 1.7 !important;
+  color: #e2e8f0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  border: none !important;
+  white-space: pre !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+}
+
+/* Инлайн-код */
+.inline-code {
+  background: rgba(139, 92, 246, 0.15) !important;
+  border: 1px solid rgba(139, 92, 246, 0.25) !important;
+  border-radius: 6px !important;
+  padding: 2px 7px !important;
+  font-size: 0.85em !important;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
+  color: #c4b5fd !important;
+  white-space: nowrap !important;
+}
+
+/* Скроллбар в блоках кода */
+.code-block-container pre::-webkit-scrollbar {
+  height: 6px;
+}
+
+.code-block-container pre::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.code-block-container pre::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.code-block-container pre::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.code-block-wrapper {
+  position: relative;
+}
+
+.code-block-wrapper pre {
+  margin: 0;
+}
+
+.copy-code-btn {
+  cursor: pointer;
 }
 
 /* ===== LIGHT THEME ===== */
@@ -529,8 +590,8 @@ button:focus {
 }
 
 .light-theme .prose pre {
-  background: rgba(0, 0, 0, 0.04) !important;
-  border-color: rgba(0, 0, 0, 0.1) !important;
+  background: transparent !important;
+  border: none !important;
 }
 
 .light-theme .prose {
@@ -713,4 +774,32 @@ button:focus {
 
 .light-theme .from-emerald-500.to-teal-500 img {
   filter: brightness(0) invert(1) !important;
+}
+
+/* ─── Светлая тема: блоки кода ─── */
+.light-theme .code-block-container {
+  background: #1e1e2e !important;
+  border-color: rgba(0, 0, 0, 0.12) !important;
+}
+
+.light-theme .code-block-container pre {
+  background: transparent !important;
+}
+
+.light-theme .code-block-container code {
+  color: #e2e8f0 !important;
+}
+
+.light-theme .code-block-container .bg-\[\#1a1a2e\] {
+  background: #16162a !important;
+}
+
+.light-theme .code-block-container .border-white\/\[0\.06\] {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.light-theme .inline-code {
+  background: rgba(124, 58, 237, 0.1) !important;
+  border-color: rgba(124, 58, 237, 0.2) !important;
+  color: #7c3aed !important;
 }
