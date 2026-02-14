@@ -32,7 +32,7 @@ const MODAL_CONTENT = {
       { type: 'section', title: '1. Общие положения', text: 'Мы серьёзно относимся к защите вашей приватности и обрабатываем данные в соответствии с законодательством.' },
       { type: 'section', title: '2. Какие данные мы собираем', text: 'Имя пользователя, email, пароль (в зашифрованном виде). История чатов хранится локально в вашем браузере.' },
       { type: 'important', text: 'Мы НЕ собираем: геолокацию, IP-адреса для отслеживания, биометрические данные, финансовую информацию.' },
-      { type: 'section', title: '3. Хранение данных', text: 'История сообщений хранится локально в localStorage вашего браузера. На серверах переписка не сохраняется.' },
+      { type: 'section', title: '3. Хранение данных', text: 'История сообщений хранится в облаке и синхронизируется между устройствами. Данные защищены шифрованием.' },
       { type: 'section', title: '4. Ваши права', text: 'Вы имеете право запросить удаление данных, отозвать согласие на обработку, экспортировать свои данные.' },
       { type: 'copyright', text: '© 2026 MoSeek. Все права защищены.' },
     ]
@@ -41,9 +41,9 @@ const MODAL_CONTENT = {
     title: 'Политика Cookie',
     content: [
       { type: 'meta', text: 'Последнее обновление: Январь 2026' },
-      { type: 'section', title: '1. Что мы храним', text: 'Настройки интерфейса, история чатов, данные аутентификации, аватар пользователя — всё в localStorage вашего браузера.' },
+      { type: 'section', title: '1. Что мы храним', text: 'Настройки интерфейса, кеш данных, токен аутентификации — в localStorage вашего браузера.' },
       { type: 'important', text: 'Мы НЕ используем рекламные и трекинговые Cookie, пиксели отслеживания, fingerprinting.' },
-      { type: 'section', title: '2. Управление', text: 'Вы полностью контролируете свои данные. Очистка localStorage удалит все данные.' },
+      { type: 'section', title: '2. Управление', text: 'Вы полностью контролируете свои данные. Очистка localStorage удалит локальный кеш.' },
       { type: 'copyright', text: '© 2026 MoSeek. Ваши данные — ваша собственность.' },
     ]
   }
@@ -407,6 +407,10 @@ export function Sidebar() {
   );
 }
 
+// ==========================================
+// ИСПРАВЛЕННАЯ ФОРМА АВТОРИЗАЦИИ
+// ==========================================
+
 type AuthStep = 'form' | 'verify';
 
 function AuthModal({ onClose }: { onClose: () => void }) {
@@ -420,6 +424,7 @@ function AuthModal({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState('');
+  const [turnstileComplete, setTurnstileComplete] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const codeInputsRef = useRef<(HTMLInputElement | null)[]>([]);
   const turnstileRef = useRef<any>(null);
@@ -433,25 +438,14 @@ function AuthModal({ onClose }: { onClose: () => void }) {
     }
   }, [countdown]);
 
-  const checkExisting = (): boolean => {
-    const storedRaw = localStorage.getItem('moseek_users_db');
-    if (!storedRaw) return true;
-    try {
-      const users = JSON.parse(storedRaw) as any[];
-      if (users.find((u: any) => u.email?.toLowerCase() === email.toLowerCase().trim())) {
-        setError('Этот email уже зарегистрирован');
-        return false;
-      }
-      if (users.find((u: any) => u.name?.toLowerCase() === name.trim().toLowerCase())) {
-        setError('Это имя уже занято');
-        return false;
-      }
-    } catch {}
-    return true;
+  const handleTurnstileSuccess = (token: string) => {
+    setTurnstileToken(token);
+    setTurnstileComplete(true);
   };
 
   const handleSubmit = async () => {
     setError('');
+
     if (!email.trim()) { setError('Введи email'); return; }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) { setError('Некорректный email'); return; }
@@ -459,6 +453,7 @@ function AuthModal({ onClose }: { onClose: () => void }) {
     if (mode === 'register') {
       if (!name.trim() || name.trim().length < 2) { setError('Имя слишком короткое'); return; }
       if (!password || password.length < 6) { setError('Пароль минимум 6 символов'); return; }
+
       const VALID_DOMAINS = [
         'gmail.com','yahoo.com','outlook.com','hotmail.com','mail.ru','yandex.ru','ya.ru','icloud.com',
         'protonmail.com','proton.me','bk.ru','inbox.ru','list.ru','rambler.ru','live.com','aol.com',
@@ -466,47 +461,90 @@ function AuthModal({ onClose }: { onClose: () => void }) {
         'ukr.net','i.ua','meta.ua','email.ua','bigmir.net',
       ];
       const domain = email.split('@')[1]?.toLowerCase();
-      if (!domain || !VALID_DOMAINS.includes(domain)) { setError('Используй настоящий email (Gmail, Outlook, Mail.ru и т.д.)'); return; }
-      if (!checkExisting()) return;
+      if (!domain || !VALID_DOMAINS.includes(domain)) {
+        setError('Используй настоящий email (Gmail, Outlook, Mail.ru и т.д.)');
+        return;
+      }
     } else {
       if (!password) { setError('Введи пароль'); return; }
     }
 
-    if (!turnstileToken) { setError('Пройди проверку безопасности'); return; }
+    // Cloudflare проверка — только если ещё не пройдена
+    if (!turnstileComplete) {
+      setError('Пройди проверку безопасности');
+      return;
+    }
 
     setIsLoading(true);
 
     if (mode === 'login') {
-      const loginResult = login(email, password);
-      if (!loginResult.success) { setError(loginResult.error || 'Ошибка входа'); setIsLoading(false); return; }
-      setIsLoading(false);
-      onClose();
+      // ASYNC login
+      try {
+        const loginResult = await login(email, password);
+        if (!loginResult.success) {
+          setError(loginResult.error || 'Ошибка входа');
+          setIsLoading(false);
+          return;
+        }
+        setIsLoading(false);
+        onClose();
+      } catch (e) {
+        console.error('Login error:', e);
+        setError('Ошибка сети. Проверь интернет');
+        setIsLoading(false);
+      }
       return;
     }
 
-    const result = await sendVerificationCode(email, turnstileToken);
-    if (result.success) {
-      setStep('verify');
-      setCountdown(60);
-      setCode('');
-      setTimeout(() => codeInputsRef.current[0]?.focus(), 100);
-    } else {
-      setError(result.error || 'Ошибка отправки кода');
-      if (turnstileRef.current) { turnstileRef.current.reset(); setTurnstileToken(''); }
+    // Регистрация — отправляем код
+    try {
+      const result = await sendVerificationCode(email, turnstileToken);
+      if (result.success) {
+        setStep('verify');
+        setCountdown(60);
+        setCode('');
+        setError('');
+        setTimeout(() => codeInputsRef.current[0]?.focus(), 100);
+      } else {
+        setError(result.error || 'Ошибка отправки кода');
+      }
+    } catch (e) {
+      console.error('Send code error:', e);
+      setError('Ошибка сети');
     }
+
     setIsLoading(false);
   };
 
   const handleVerifyAndComplete = async () => {
     setError('');
     if (code.length !== 6) { setError('Введи 6-значный код'); return; }
+
     setIsLoading(true);
-    const verifyResult = await verifyCode(email, code);
-    if (!verifyResult.success) { setError(verifyResult.error || 'Неверный код'); setIsLoading(false); return; }
-    const regResult = register(name, email, password);
-    if (!regResult.success) { setError(regResult.error || 'Ошибка регистрации'); setIsLoading(false); return; }
-    setIsLoading(false);
-    onClose();
+
+    try {
+      const verifyResult = await verifyCode(email, code);
+      if (!verifyResult.success) {
+        setError(verifyResult.error || 'Неверный код');
+        setIsLoading(false);
+        return;
+      }
+
+      // ASYNC register
+      const regResult = await register(name, email, password);
+      if (!regResult.success) {
+        setError(regResult.error || 'Ошибка регистрации');
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(false);
+      onClose();
+    } catch (e) {
+      console.error('Register error:', e);
+      setError('Ошибка сети. Проверь интернет');
+      setIsLoading(false);
+    }
   };
 
   const handleCodeChange = (index: number, value: string) => {
@@ -532,13 +570,30 @@ function AuthModal({ onClose }: { onClose: () => void }) {
   };
 
   const handleResend = async () => {
-    if (countdown > 0 || !turnstileToken) return;
+    if (countdown > 0) return;
     setIsLoading(true);
     setError('');
-    const result = await sendVerificationCode(email, turnstileToken);
-    if (result.success) { setCountdown(60); setCode(''); }
-    else { setError(result.error || 'Ошибка повторной отправки'); }
+
+    try {
+      // Используем сохранённый токен — НЕ требуем повторной проверки Cloudflare
+      const result = await sendVerificationCode(email, turnstileToken || 'resend');
+      if (result.success) {
+        setCountdown(60);
+        setCode('');
+      } else {
+        setError(result.error || 'Ошибка повторной отправки');
+      }
+    } catch (e) {
+      setError('Ошибка сети');
+    }
+
     setIsLoading(false);
+  };
+
+  const handleBack = () => {
+    setStep('form');
+    setCode('');
+    setError('');
   };
 
   return (
@@ -617,6 +672,7 @@ function AuthModal({ onClose }: { onClose: () => void }) {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Пароль"
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(); }}
                     className="w-full h-12 px-4 pr-12 rounded-xl bg-white/5 border border-white/10 text-white placeholder-zinc-500 text-sm focus:outline-none focus:border-violet-500/50 focus:bg-white/10 transition-all"
                   />
                   <button
@@ -628,16 +684,29 @@ function AuthModal({ onClose }: { onClose: () => void }) {
                   </button>
                 </div>
 
-                <div className="flex justify-center py-2">
-                  <Turnstile
-                    ref={turnstileRef}
-                    siteKey={TURNSTILE_SITE_KEY}
-                    onSuccess={(token) => setTurnstileToken(token)}
-                    onError={() => setTurnstileToken('')}
-                    onExpire={() => setTurnstileToken('')}
-                    options={{ theme: 'dark', size: 'flexible' }}
-                  />
-                </div>
+                {/* Cloudflare — показываем только если ещё не пройден */}
+                {!turnstileComplete && (
+                  <div className="flex justify-center py-2">
+                    <Turnstile
+                      ref={turnstileRef}
+                      siteKey={TURNSTILE_SITE_KEY}
+                      onSuccess={handleTurnstileSuccess}
+                      onError={() => { setTurnstileToken(''); setTurnstileComplete(false); }}
+                      onExpire={() => { setTurnstileToken(''); setTurnstileComplete(false); }}
+                      options={{ theme: 'dark', size: 'flexible' }}
+                    />
+                  </div>
+                )}
+
+                {/* Показываем галочку если Cloudflare пройден */}
+                {turnstileComplete && (
+                  <div className="flex items-center justify-center gap-2 py-2">
+                    <div className="w-5 h-5 rounded-full bg-green-500/20 border border-green-500/40 flex items-center justify-center">
+                      <span className="text-green-400 text-xs">✓</span>
+                    </div>
+                    <span className="text-xs text-green-400/80">Проверка пройдена</span>
+                  </div>
+                )}
 
                 <motion.button
                   type="button"
@@ -693,7 +762,14 @@ function AuthModal({ onClose }: { onClose: () => void }) {
                 {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>Подтвердить</span>}
               </motion.button>
 
-              <div className="text-center">
+              <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={handleBack}
+                  className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
+                >
+                  ← Назад
+                </button>
                 <button
                   type="button"
                   onClick={handleResend}
