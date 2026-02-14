@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
-import { Copy, Check, ChevronDown, ChevronUp } from 'lucide-react';
-import { useState, useEffect, useMemo, useCallback, useRef, memo } from 'react';
+import { Copy, Check, ChevronDown, ChevronUp, Code2 } from 'lucide-react';
+import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { marked } from 'marked';
 import type { Message } from '../types';
 import { MODEL_ICON } from '../config/models';
@@ -30,7 +30,6 @@ const CodeCopyButton = memo(function CodeCopyButton({ code }: { code: string }) 
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // fallback
       const ta = document.createElement('textarea');
       ta.value = code;
       document.body.appendChild(ta);
@@ -46,7 +45,6 @@ const CodeCopyButton = memo(function CodeCopyButton({ code }: { code: string }) 
     <button
       onClick={handleCopy}
       className={`
-        absolute top-2 right-2 z-10
         flex items-center gap-1.5
         px-2.5 py-1.5 rounded-lg
         text-xs font-medium
@@ -77,16 +75,17 @@ const CodeBlock = memo(function CodeBlock({ code, language }: { code: string; la
   return (
     <div className="code-block-container relative my-4 rounded-xl overflow-hidden border border-white/[0.06] shadow-lg">
       {/* Шапка блока кода */}
-      <div className="flex items-center justify-between px-4 py-2 bg-[#1a1a2e] border-b border-white/[0.06]">
+      <div className="flex items-center justify-between px-4 py-2.5 bg-[#0a0a18] border-b border-white/[0.06]">
         <div className="flex items-center gap-2">
-          <div className="flex gap-1.5">
-            <div className="w-3 h-3 rounded-full bg-red-500/60" />
-            <div className="w-3 h-3 rounded-full bg-yellow-500/60" />
-            <div className="w-3 h-3 rounded-full bg-green-500/60" />
-          </div>
+          <Code2 className="w-3.5 h-3.5 text-violet-400/70" />
           {language && (
-            <span className="text-[11px] font-mono text-zinc-500 ml-2 uppercase tracking-wider">
+            <span className="text-[11px] font-mono text-violet-400/60 uppercase tracking-wider">
               {language}
+            </span>
+          )}
+          {!language && (
+            <span className="text-[11px] font-mono text-zinc-500 uppercase tracking-wider">
+              code
             </span>
           )}
         </div>
@@ -114,7 +113,6 @@ function parseContentBlocks(content: string): Array<{ type: 'text' | 'code'; con
   let match;
 
   while ((match = codeBlockRegex.exec(content)) !== null) {
-    // Текст перед блоком кода
     if (match.index > lastIndex) {
       const textBefore = content.slice(lastIndex, match.index).trim();
       if (textBefore) {
@@ -122,7 +120,6 @@ function parseContentBlocks(content: string): Array<{ type: 'text' | 'code'; con
       }
     }
 
-    // Блок кода
     const language = match[1] || undefined;
     const code = match[2].trim();
     if (code) {
@@ -132,7 +129,6 @@ function parseContentBlocks(content: string): Array<{ type: 'text' | 'code'; con
     lastIndex = match.index + match[0].length;
   }
 
-  // Текст после последнего блока кода
   if (lastIndex < content.length) {
     const remaining = content.slice(lastIndex).trim();
     if (remaining) {
@@ -140,7 +136,6 @@ function parseContentBlocks(content: string): Array<{ type: 'text' | 'code'; con
     }
   }
 
-  // Если блоков нет — весь контент текстовый
   if (blocks.length === 0 && content.trim()) {
     blocks.push({ type: 'text', content: content.trim() });
   }
@@ -153,7 +148,6 @@ const TextBlock = memo(function TextBlock({ content, isLight }: { content: strin
   const html = useMemo(() => {
     let result = marked.parse(content, { async: false }) as string;
 
-    // Инлайн-код стилизация
     result = result.replace(
       /<code(?!\s*class)(.*?)>([\s\S]*?)<\/code>/g,
       '<code class="inline-code"$1>$2</code>'
