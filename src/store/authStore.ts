@@ -218,7 +218,6 @@ export const useAuthStore = create<AuthState>()(
         try {
           const oldHash = await hashPassword(oldPassword);
 
-          // Проверяем старый пароль
           const { data: found, error: fetchError } = await supabase
             .from('users')
             .select('password_hash')
@@ -233,7 +232,6 @@ export const useAuthStore = create<AuthState>()(
             return { success: false, error: 'Неверный текущий пароль' };
           }
 
-          // Хешируем и сохраняем новый пароль
           const newHash = await hashPassword(newPassword);
 
           const { error: updateError } = await supabase
@@ -303,6 +301,7 @@ export const useAuthStore = create<AuthState>()(
           }
 
           aiService.setUserId(null);
+          aiService.setUserEmail(null);
 
           set({
             user: null,
@@ -316,7 +315,6 @@ export const useAuthStore = create<AuthState>()(
             localStorage.removeItem('moseek-chats');
             sessionStorage.removeItem('moseek_pending_codes');
           } catch {
-            // ignore
           }
 
           return { success: true };
@@ -485,6 +483,7 @@ export const useAuthStore = create<AuthState>()(
           };
 
           aiService.setUserId(user.id);
+          aiService.setUserEmail(user.email);
 
           set({
             user,
@@ -530,6 +529,7 @@ export const useAuthStore = create<AuthState>()(
           };
 
           aiService.setUserId(user.id);
+          aiService.setUserEmail(user.email);
 
           set({
             user,
@@ -548,6 +548,7 @@ export const useAuthStore = create<AuthState>()(
 
       logout: () => {
         aiService.setUserId(null);
+        aiService.setUserEmail(null);
         set({ user: null, isAuthenticated: false });
       },
     }),
