@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import emailjs from '@emailjs/browser';
+import { supabase } from '../services/supabaseClient';
+import { aiService } from '../services/aiService';
 
 const EMAILJS_SERVICE = 'service_jijg2le';
 const EMAILJS_TEMPLATE = 'template_ov1skr7';
@@ -19,8 +21,9 @@ interface AuthState {
   isAuthenticated: boolean;
   guestMessages: number;
   maxGuestMessages: number;
-  register: (name: string, email: string, password: string) => { success: boolean; error?: string };
-  login: (email: string, password: string) => { success: boolean; error?: string };
+  isLoading: boolean;
+  register: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   incrementGuestMessages: () => void;
   canSendMessage: () => boolean;
@@ -29,34 +32,12 @@ interface AuthState {
   updateAvatar: (avatar: string) => void;
 }
 
-interface StoredUser {
-  id: string;
-  name: string;
-  email: string;
-  avatar: string;
-  password: string;
-  createdAt: number;
-}
-
 interface PendingCode {
   email: string;
   code: string;
   expiresAt: number;
   attempts: number;
 }
-
-const getStoredUsers = (): StoredUser[] => {
-  try {
-    const data = localStorage.getItem('moseek_users_db');
-    return data ? JSON.parse(data) : [];
-  } catch {
-    return [];
-  }
-};
-
-const saveStoredUsers = (users: StoredUser[]) => {
-  localStorage.setItem('moseek_users_db', JSON.stringify(users));
-};
 
 const getPendingCodes = (): PendingCode[] => {
   try {
@@ -77,14 +58,12 @@ const generateCode = (): string => {
   return String(100000 + (array[0] % 900000));
 };
 
-const hashPassword = (password: string): string => {
-  let hash = 0;
-  for (let i = 0; i < password.length; i++) {
-    const char = password.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
-  }
-  return 'h_' + Math.abs(hash).toString(36) + '_' + password.length;
+const hashPassword = async (password: string): Promise<string> => {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password + '_mogpt_salt_2024');
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 };
 
 const VALID_EMAIL_DOMAINS = [
@@ -115,6 +94,7 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       guestMessages: 0,
       maxGuestMessages: 10,
+      isLoading: false,
 
       canSendMessage: () => {
         const state = get();
@@ -130,12 +110,11 @@ export const useAuthStore = create<AuthState>()(
         set((state) => {
           if (!state.user) return state;
           const updated = { ...state.user, avatar };
-          const storedUsers = getStoredUsers();
-          const idx = storedUsers.findIndex(u => u.id === state.user!.id);
-          if (idx !== -1) {
-            storedUsers[idx].avatar = avatar;
-            saveStoredUsers(storedUsers);
-          }
+          supabase
+            .from('users')
+            .update({ avatar })
+            .eq('id', state.user.id)
+            .then(() => {});
           return { user: updated };
         });
       },
@@ -143,7 +122,6 @@ export const useAuthStore = create<AuthState>()(
       sendVerificationCode: async (email, _turnstileToken) => {
         try {
           const normalizedEmail = email.toLowerCase().trim();
-
           const pendingCodes = getPendingCodes();
           const existing = pendingCodes.find(p => p.email === normalizedEmail);
           if (existing && existing.expiresAt > Date.now() && existing.attempts >= 5) {
@@ -151,7 +129,6 @@ export const useAuthStore = create<AuthState>()(
           }
 
           const code = generateCode();
-
           const filtered = pendingCodes.filter(p => p.email !== normalizedEmail);
           filtered.push({
             email: normalizedEmail,
@@ -212,99 +189,167 @@ export const useAuthStore = create<AuthState>()(
 
           pendingCodes.splice(pendingIndex, 1);
           savePendingCodes(pendingCodes);
-
           return { success: true };
         } catch {
           return { success: false, error: 'Ошибка проверки кода' };
         }
       },
 
-      register: (name, email, password) => {
-        const storedUsers = getStoredUsers();
+      register: async (name, email, password) => {
+        set({ isLoading: true });
+        try {
+          if (name.trim().length < 2) {
+            return { success: false, error: 'Имя слишком короткое' };
+          }
 
-        if (name.trim().length < 2) {
-          return { success: false, error: 'Имя слишком короткое' };
-        }
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(email)) {
+            return { success: false, error: 'Некорректный email' };
+          }
 
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-          return { success: false, error: 'Некорректный email' };
-        }
+          if (!isValidEmailDomain(email)) {
+            return { success: false, error: 'Используй настоящий email (Gmail, Outlook, Mail.ru и т.д.)' };
+          }
 
-        if (!isValidEmailDomain(email)) {
-          return { success: false, error: 'Используй настоящий email (Gmail, Outlook, Mail.ru и т.д.)' };
-        }
+          if (password.length < 6) {
+            return { success: false, error: 'Пароль минимум 6 символов' };
+          }
 
-        if (storedUsers.find(u => u.email.toLowerCase() === email.toLowerCase())) {
-          return { success: false, error: 'Этот email уже зарегистрирован' };
-        }
+          const normalizedEmail = email.toLowerCase().trim();
+          const trimmedName = name.trim();
 
-        if (storedUsers.find(u => u.name.toLowerCase() === name.trim().toLowerCase())) {
-          return { success: false, error: 'Это имя уже занято' };
-        }
+          // Проверяем email в Supabase
+          const { data: existingEmail } = await supabase
+            .from('users')
+            .select('id')
+            .eq('email', normalizedEmail)
+            .maybeSingle();
 
-        if (password.length < 6) {
-          return { success: false, error: 'Пароль минимум 6 символов' };
-        }
+          if (existingEmail) {
+            return { success: false, error: 'Этот email уже зарегистрирован' };
+          }
 
-        const newUser: StoredUser = {
-          id: Date.now().toString(36) + Math.random().toString(36).slice(2),
-          name: name.trim(),
-          email: email.toLowerCase().trim(),
-          avatar: generateAvatar(name),
-          password: hashPassword(password),
-          createdAt: Date.now(),
-        };
+          // Проверяем имя
+          const { data: existingName } = await supabase
+            .from('users')
+            .select('id')
+            .ilike('name', trimmedName)
+            .maybeSingle();
 
-        storedUsers.push(newUser);
-        saveStoredUsers(storedUsers);
+          if (existingName) {
+            return { success: false, error: 'Это имя уже занято' };
+          }
 
-        set({
-          user: {
+          const passwordHash = await hashPassword(password);
+          const avatar = generateAvatar(trimmedName);
+
+          // Записываем в Supabase
+          const { data: newUser, error: insertError } = await supabase
+            .from('users')
+            .insert({
+              name: trimmedName,
+              email: normalizedEmail,
+              password_hash: passwordHash,
+              avatar,
+            })
+            .select()
+            .single();
+
+          if (insertError || !newUser) {
+            console.error('Supabase insert error:', insertError);
+            return { success: false, error: 'Ошибка регистрации. Попробуй ещё раз' };
+          }
+
+          // Создаём настройки
+          await supabase
+            .from('user_preferences')
+            .insert({
+              user_id: newUser.id,
+              preferred_language: 'ru',
+              response_mode: 'normal',
+              rudeness_mode: 'rude',
+            });
+
+          const user: User = {
             id: newUser.id,
             name: newUser.name,
             email: newUser.email,
-            avatar: newUser.avatar,
-            createdAt: newUser.createdAt,
-          },
-          isAuthenticated: true,
-        });
+            avatar: newUser.avatar || avatar,
+            createdAt: new Date(newUser.created_at).getTime(),
+          };
 
-        return { success: true };
+          // Устанавливаем userId в aiService для памяти
+          aiService.setUserId(user.id);
+
+          set({
+            user,
+            isAuthenticated: true,
+            isLoading: false,
+          });
+
+          return { success: true };
+        } catch (e) {
+          console.error('Registration error:', e);
+          return { success: false, error: 'Ошибка сети. Проверь интернет' };
+        } finally {
+          set({ isLoading: false });
+        }
       },
 
-      login: (email, password) => {
-        const storedUsers = getStoredUsers();
-        const found = storedUsers.find(u => u.email.toLowerCase() === email.toLowerCase().trim());
+      login: async (email, password) => {
+        set({ isLoading: true });
+        try {
+          const normalizedEmail = email.toLowerCase().trim();
+          const passwordHash = await hashPassword(password);
 
-        if (!found) {
-          return { success: false, error: 'Пользователь не найден' };
-        }
+          // Ищем в Supabase
+          const { data: found, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', normalizedEmail)
+            .maybeSingle();
 
-        if (found.password !== hashPassword(password)) {
-          return { success: false, error: 'Неверный пароль' };
-        }
+          if (error || !found) {
+            return { success: false, error: 'Пользователь не найден' };
+          }
 
-        set({
-          user: {
+          if (found.password_hash !== passwordHash) {
+            return { success: false, error: 'Неверный пароль' };
+          }
+
+          const user: User = {
             id: found.id,
             name: found.name,
             email: found.email,
-            avatar: found.avatar,
-            createdAt: found.createdAt,
-          },
-          isAuthenticated: true,
-        });
+            avatar: found.avatar || generateAvatar(found.name),
+            createdAt: new Date(found.created_at).getTime(),
+          };
 
-        return { success: true };
+          // Устанавливаем userId в aiService для памяти
+          aiService.setUserId(user.id);
+
+          set({
+            user,
+            isAuthenticated: true,
+            isLoading: false,
+          });
+
+          return { success: true };
+        } catch (e) {
+          console.error('Login error:', e);
+          return { success: false, error: 'Ошибка сети. Проверь интернет' };
+        } finally {
+          set({ isLoading: false });
+        }
       },
 
       logout: () => {
+        aiService.setUserId(null);
         set({ user: null, isAuthenticated: false });
       },
     }),
     {
-      name: 'moseek-auth',
+      name: 'moseek-auth-v2',
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
