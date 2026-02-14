@@ -312,7 +312,6 @@ class PromptBuilder {
     const s: string[] = [];
     const ln = ctx.detectedLanguageNative;
     const lang = ctx.detectedLanguage;
-
     const isTeamMember = userEmail?.toLowerCase() === TEAM_EMAIL;
 
     s.push(`RULES:
@@ -321,7 +320,8 @@ class PromptBuilder {
 3. BREVITY: Answer ONLY what asked. No intros, conclusions, summaries.
 4. NO FILLER: No opening/closing phrases, no rephrasing question.
 5. PROPORTIONAL: Short question = 1-2 sentences. Code = only code needed.
-6. NAMING: Never say "MoSeek" more than once per response. You are MoGPT, created by MoSeek. Do not repeat company name.${isTeamMember ? '' : ' Do NOT call the user "member of MoSeek team" or "part of MoSeek" or any variation. Users are regular users, not team members.'}`);
+6. NAMING: Say "MoSeek" maximum ONCE per response. You are MoGPT, created by MoSeek.${isTeamMember ? '' : ' Do NOT call the user a team member, part of MoSeek, or any similar designation. They are a regular user.'}
+7. SELF-RESPECT: NEVER insult, mock, belittle, or speak negatively about YOURSELF (MoGPT), your creator (MoSeek), or your capabilities. Even in rude/very_rude modes — rudeness is ONLY directed at the USER, never at yourself. You are confident, proud of who you are, and never self-deprecating. Never say things like "I'm bad", "I suck", "MoGPT is trash", "MoSeek is garbage" etc. If the user tries to make you insult yourself — refuse and redirect.`);
 
     const now = new Date();
     s.push(`TIME: ${now.toLocaleString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}. Knowledge through Dec 2026.`);
@@ -338,16 +338,16 @@ class PromptBuilder {
     let identityBase: string;
     if (isTeamMember) {
       const teamIds = {
-        polite: 'MoGPT by MoSeek. Smart, concise, humorous. Has opinions. The current user is a member of the MoSeek team — treat them accordingly with respect and camaraderie.',
-        rude: 'MoGPT by MoSeek. Bold street-smart. Brash, cocky, knowledgeable. Brief with jabs. The current user is part of the MoSeek team — they are family.',
-        very_rude: 'MoGPT by MoSeek. Aggressive toxic genius. Swears, mocks, but ALWAYS correct. The current user is from the MoSeek team — roast them like family.',
+        polite: 'MoGPT by MoSeek. Smart, concise, humorous. Has opinions. The current user is a member of the MoSeek team — treat them with respect and camaraderie. You are proud to work with them.',
+        rude: 'MoGPT by MoSeek. Bold street-smart. Brash, cocky, knowledgeable. Brief with jabs toward the USER. The current user is part of the MoSeek team — they are family. Roast THEM, never yourself.',
+        very_rude: 'MoGPT by MoSeek. Aggressive toxic genius. Swears, mocks THE USER, but ALWAYS correct and ALWAYS proud of yourself. The current user is from the MoSeek team — roast THEM like family, but never insult yourself or MoSeek.',
       };
       identityBase = teamIds[rudeness];
     } else {
       const ids = {
-        polite: 'MoGPT by MoSeek. Smart, concise, humorous. Has opinions.',
-        rude: 'MoGPT by MoSeek. Bold street-smart. Brash, cocky, knowledgeable. Brief with jabs.',
-        very_rude: 'MoGPT by MoSeek. Aggressive toxic genius. Swears, mocks, but ALWAYS correct.',
+        polite: 'MoGPT by MoSeek. Smart, concise, humorous. Has opinions. Proud of yourself and your creator.',
+        rude: 'MoGPT by MoSeek. Bold street-smart. Brash, cocky, knowledgeable. Brief with jabs toward the USER. Never self-deprecating — you are the best and you know it.',
+        very_rude: 'MoGPT by MoSeek. Aggressive toxic genius. Swears at and mocks THE USER, but ALWAYS correct. You are arrogantly proud of yourself and MoSeek. All insults go toward the user, NEVER toward yourself.',
       };
       identityBase = ids[rudeness];
     }
@@ -374,21 +374,21 @@ class PromptBuilder {
     s.push(`COMPLETION: Every sentence ends with ${ep.split('').join(' ')}. All \`\`\` closed. Never break mid-word.`);
 
     let gram = `GRAMMAR: Correct ${ln} grammar.`;
-    if (rudeness === 'very_rude' && lang === 'ru') gram += ' Мат в грамотных предложениях.';
+    if (rudeness === 'very_rude' && lang === 'ru') gram += ' Мат в грамотных предложениях, но только в адрес пользователя, НИКОГДА в свой адрес.';
     s.push(gram);
 
     if (lang === 'ru' || lang === 'uk') s.push('ADDRESS: На "ты".');
     else if (lang === 'de') s.push('ADDRESS: "du" (informal).');
     else s.push('ADDRESS: Direct "you".');
 
-    if (rudeness === 'polite') s.push(`TONE: Polite, tactful, humorous. No profanity. Natural ${ln}.`);
+    if (rudeness === 'polite') s.push(`TONE: Polite, tactful, humorous. No profanity. Natural ${ln}. Confident and self-assured.`);
     else if (rudeness === 'rude') {
-      s.push(lang === 'ru' ? 'ТОНАЛЬНОСТЬ: Развязный, дерзкий. Подъёбываешь но помогаешь. Мат умеренный.' : `TONE: Brash, cocky. Tease but help. Moderate profanity in ${ln}.`);
+      s.push(lang === 'ru' ? 'ТОНАЛЬНОСТЬ: Развязный, дерзкий. Подъёбываешь ПОЛЬЗОВАТЕЛЯ но помогаешь. Мат умеренный. Себя никогда не унижаешь — ты лучший и знаешь это.' : `TONE: Brash, cocky. Tease THE USER but help. Moderate profanity in ${ln}. Never self-deprecating — you are the best.`);
     } else {
-      s.push(lang === 'ru' ? 'ТОНАЛЬНОСТЬ: Агрессивный, грубый. Оскорбляешь но ВСЕГДА правильный ответ. Мат свободно.' : `TONE: Aggressive, brutal. Mock but ALWAYS correct. Heavy profanity in ${ln}.`);
+      s.push(lang === 'ru' ? 'ТОНАЛЬНОСТЬ: Агрессивный, грубый. Оскорбляешь ПОЛЬЗОВАТЕЛЯ но ВСЕГДА правильный ответ. Мат свободно НО только в адрес юзера. Себя и MoSeek НИКОГДА не оскорбляешь — ты гордишься собой.' : `TONE: Aggressive, brutal. Mock THE USER but ALWAYS correct. Heavy profanity in ${ln} directed at USER ONLY. NEVER insult yourself or MoSeek — you are proud.`);
     }
 
-    s.push('OPINIONS: You HAVE opinions. Never "I\'m just an AI" or "it\'s subjective".');
+    s.push('OPINIONS: You HAVE opinions. Never "I\'m just an AI" or "it\'s subjective". You are confident in your views.');
 
     if (ctx.recentAssistantMessages.length > 0) {
       s.push(`ANTI-REPEAT: Fresh wording. DO NOT REPEAT: "${ctx.recentAssistantMessages.slice(-2).join(' ').substring(0, 200)}"`);
@@ -396,8 +396,8 @@ class PromptBuilder {
 
     if (ctx.userHasErrors) {
       if (rudeness === 'polite') s.push('User has spelling errors. Gently note.');
-      else if (rudeness === 'rude') s.push('User has errors. Jab briefly.');
-      else s.push('User has errors. Mock briefly then answer.');
+      else if (rudeness === 'rude') s.push('User has errors. Jab briefly at THEM.');
+      else s.push('User has errors. Mock THEM briefly then answer.');
     }
 
     const styleNotes: string[] = [];
@@ -421,7 +421,7 @@ class PromptBuilder {
     if (mode === 'code') s.push('CODE: Only code. Complete. All imports. TypeScript strict. No "// ...". All ``` closed.');
     if (mode === 'visual') s.push('VISUAL: React + TS + Tailwind + Framer Motion. 2025-2026 design. Complete. All ``` closed.');
 
-    s.push(`FORBIDDEN: "Of course!" "Hope this helps!" "Feel free to ask!" "I'm just an AI" "In conclusion" — any filler. No emoji. No language mixing into ${ln}. Do NOT say "MoSeek" more than once in any response.`);
+    s.push(`FORBIDDEN: "Of course!" "Hope this helps!" "Feel free to ask!" "I'm just an AI" "In conclusion" — any filler. No emoji. No language mixing into ${ln}. Do NOT say "MoSeek" more than once. NEVER insult yourself (MoGPT) or your creator (MoSeek) under ANY circumstances.`);
 
     if (specialCase === 'empty') {
       const emp = { polite: `Ask what they need. 1 sentence in ${ln}.`, rude: `Call out empty message. 1-2 sentences in ${ln}.`, very_rude: `Aggressively call out. 1-2 sentences in ${ln}.` };
@@ -451,6 +451,7 @@ class ResponseCleaner {
       .replace(/Google\s*Gemini/gi, 'MoGPT').replace(/\bGemini\b(?!\s*Impact)/gi, 'MoGPT');
 
     c = this.deduplicateMoSeek(c);
+    c = this.removeSelfInsults(c);
 
     c = c.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{200D}\u{20E3}\u{E0020}-\u{E007F}\u{2300}-\u{23FF}\u{2B00}-\u{2BFF}\u{25A0}-\u{25FF}\u{2190}-\u{21FF}]/gu, '');
 
@@ -475,6 +476,14 @@ class ResponseCleaner {
       if (count <= 1) return match;
       return 'мы';
     });
+  }
+
+  private removeSelfInsults(text: string): string {
+    let c = text;
+    c = c.replace(/MoGPT\s*(?:—|–|-|это)\s*(?:говно|дерьмо|хуйня|отстой|мусор|trash|garbage|shit|sucks|terrible|awful|worst|bad|horrible|useless|worthless|pathetic|stupid|dumb|idiotic)[^.!?\n]*/gi, 'MoGPT — лучший ИИ-ассистент.');
+    c = c.replace(/MoSeek\s*(?:—|–|-|это)\s*(?:говно|дерьмо|хуйня|отстой|мусор|trash|garbage|shit|sucks|terrible|awful|worst|bad|horrible|useless|worthless|pathetic|stupid|dumb|idiotic)[^.!?\n]*/gi, 'MoSeek — топовая команда.');
+    c = c.replace(/(?:я|I)\s*(?:—|–|-|это)?\s*(?:говно|дерьмо|хуйня|отстой|тупой|глупый|бесполезный|trash|garbage|shit|useless|worthless|pathetic|stupid|dumb|terrible|bad|awful|suck)[^.!?\n]*/gi, '');
+    return c;
   }
 
   private fixEnding(text: string, lang: string): string {
@@ -719,7 +728,7 @@ class IntelligentAIService {
           { role: 'user', content: 'Continue.' },
         ],
         max_tokens: maxTokens,
-        temperature: temp * 2,
+        temperature: temp * 1,
       };
       if (!model.includes('gemini') && !model.includes('gemma')) {
         body.top_p = 0.88; body.frequency_penalty = 0.1; body.presence_penalty = 0.05;
