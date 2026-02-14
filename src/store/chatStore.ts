@@ -1,3 +1,5 @@
+// src/store/chatStore.ts
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { ChatState, Message, Chat } from '../types';
@@ -20,6 +22,10 @@ interface ExtendedChatState extends ChatState {
   isCurrentChatGenerating: () => boolean;
   syncToCloud: (userId: string) => Promise<void>;
   syncFromCloud: (userId: string) => Promise<void>;
+  archiveChat: (chatId: string) => void;
+  unarchiveChat: (chatId: string) => void;
+  getActiveChats: () => Chat[];
+  getArchivedChats: () => Chat[];
 }
 
 const createChat = (): Chat => ({
@@ -74,16 +80,45 @@ export const useChatStore = create<ExtendedChatState>()(
       deleteChat: (id) => {
         set((state) => {
           const newChats = state.chats.filter(c => c.id !== id);
+          const activeChats = newChats.filter(c => !(c as any).archived);
           const newCurrentId = state.currentChatId === id
-            ? (newChats.length > 0 ? newChats[0].id : null)
+            ? (activeChats.length > 0 ? activeChats[0].id : null)
             : state.currentChatId;
           return { chats: newChats, currentChatId: newCurrentId };
         });
-        // Удаляем из облака
         supabase.from('chats').delete().eq('id', id).then(() => {});
       },
 
       setCurrentChat: (id) => set({ currentChatId: id }),
+
+      archiveChat: (chatId) => {
+        set((state) => {
+          const newChats = state.chats.map(c =>
+            c.id === chatId ? { ...c, archived: true, updatedAt: new Date() } : c
+          );
+          const activeChats = newChats.filter(c => !(c as any).archived);
+          const newCurrentId = state.currentChatId === chatId
+            ? (activeChats.length > 0 ? activeChats[0].id : null)
+            : state.currentChatId;
+          return { chats: newChats, currentChatId: newCurrentId };
+        });
+      },
+
+      unarchiveChat: (chatId) => {
+        set((state) => ({
+          chats: state.chats.map(c =>
+            c.id === chatId ? { ...c, archived: false, updatedAt: new Date() } : c
+          ),
+        }));
+      },
+
+      getActiveChats: () => {
+        return get().chats.filter(c => !(c as any).archived);
+      },
+
+      getArchivedChats: () => {
+        return get().chats.filter(c => (c as any).archived);
+      },
 
       addMessage: (message) => {
         const msgId = crypto.randomUUID();
@@ -151,16 +186,11 @@ export const useChatStore = create<ExtendedChatState>()(
       setGenerating: (value) => set({ isGenerating: value }),
       toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
 
-      // ==========================================
-      // СИНХРОНИЗАЦИЯ С ОБЛАКОМ
-      // ==========================================
-
       syncToCloud: async (userId: string) => {
         const state = get();
         set({ isSyncing: true });
 
         try {
-          // Сохраняем настройки
           await supabase
             .from('user_preferences')
             .upsert({
@@ -171,7 +201,6 @@ export const useChatStore = create<ExtendedChatState>()(
               updated_at: new Date().toISOString(),
             });
 
-          // Сохраняем чаты (макс 30)
           for (const chat of state.chats.slice(0, 30)) {
             await supabase
               .from('chats')
@@ -179,6 +208,7 @@ export const useChatStore = create<ExtendedChatState>()(
                 id: chat.id,
                 user_id: userId,
                 title: chat.title,
+                archived: (chat as any).archived || false,
                 created_at: new Date(chat.createdAt).toISOString(),
                 updated_at: new Date(chat.updatedAt).toISOString(),
               });
@@ -212,7 +242,6 @@ export const useChatStore = create<ExtendedChatState>()(
         set({ isSyncing: true });
 
         try {
-          // Загружаем настройки
           const { data: prefs } = await supabase
             .from('user_preferences')
             .select('*')
@@ -227,7 +256,6 @@ export const useChatStore = create<ExtendedChatState>()(
             });
           }
 
-          // Загружаем чаты
           const { data: cloudChats } = await supabase
             .from('chats')
             .select('*')
@@ -256,16 +284,21 @@ export const useChatStore = create<ExtendedChatState>()(
                 isLoading: false,
               }));
 
-              chats.push({
+              const chat: any = {
                 id: cc.id,
                 title: cc.title,
                 messages,
                 createdAt: new Date(cc.created_at),
                 updatedAt: new Date(cc.updated_at),
-              });
+              };
+
+              if (cc.archived) {
+                chat.archived = true;
+              }
+
+              chats.push(chat);
             }
 
-            // Мерджим: облачные + локальные
             const state = get();
             const localIds = new Set(state.chats.map(c => c.id));
             const cloudOnly = chats.filter(c => !localIds.has(c.id));
