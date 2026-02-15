@@ -39,6 +39,28 @@ interface ConversationContext {
   detectedLanguageNative: string;
   userHasErrors: boolean;
   recentAssistantMessages: string[];
+  detectedProgrammingContext: ProgrammingContext | null;
+  userFlags: UserFlags;
+}
+
+interface ProgrammingContext {
+  language: string;
+  framework?: string;
+  realm?: 'server' | 'client' | 'shared';
+  taskType: 'bug' | 'new_code' | 'explain' | 'review' | 'optimize' | 'refactor' | 'general';
+}
+
+interface UserFlags {
+  wantsDetailed: boolean;
+  wantsBrief: boolean;
+  wantsCodeOnly: boolean;
+  wantsExplanation: boolean;
+  wantsFix: boolean;
+  wantsOptimization: boolean;
+  wantsRefactor: boolean;
+  wantsComparison: boolean;
+  wantsReview: boolean;
+  wantsFromScratch: boolean;
 }
 
 const LANGUAGE_MAP: Record<string, { name: string; native: string; endPunctuation: string; direction: 'ltr' | 'rtl' }> = {
@@ -107,6 +129,67 @@ const LANGUAGE_MAP: Record<string, { name: string; native: string; endPunctuatio
 
 const TEAM_EMAIL = 'energoferon41@gmail.com';
 
+const KNOWLEDGE_BASE = `You have deep expert knowledge in the following areas (use when relevant):
+
+GARRY'S MOD / GLUA:
+- GLua = modified Lua 5.1 on Source Engine. Docs: wiki.facepunch.com/gmod
+- Realms: SERVER (sv_), CLIENT (cl_), SHARED (sh_). Check with "if SERVER then" / "if CLIENT then". AddCSLuaFile() sends files to client.
+- File structure: addons/addon_name/lua/ with autorun/, weapons/, entities/, effects/, vgui/ subdirectories.
+- Namespacing: MyAddon = MyAddon or {} — NEVER pollute _G.
+- Hooks: hook.Add(event, uniqueID, func). UniqueID must be unique like "AddonName_Purpose".
+- Key hooks: Initialize, Think, PlayerSpawn, PlayerDeath, PlayerSay, HUDPaint, HUDShouldDraw, EntityTakeDamage, ShutDown, InitPostEntity, PlayerInitialSpawn.
+- Net library: util.AddNetworkString (SERVER), net.Start/Write*/Send/Broadcast/SendToServer, net.Receive. ALWAYS validate client data + rate limit. WriteTable is slow — use typed Write* methods.
+- NW2 variables preferred over NW. Don't change every frame.
+- Metatables: FindMetaTable("Player"/"Entity"/"Weapon"). Extend with function PLAYER:Method() end.
+- SWEP: shared.lua (params), init.lua (SV: AddCSLuaFile, include), cl_init.lua (CL: include, draw). Methods: Initialize, PrimaryAttack, SecondaryAttack, Reload, Think, Deploy. Use IsFirstTimePredicted() for sounds/effects.
+- SENT: ENT.Type="anim"/"point", ENT.Base="base_gmodentity". SV: Initialize, Use, OnTakeDamage, Think, OnRemove. CL: Draw, DrawTranslucent. PhysicsInit(SOLID_VPHYSICS).
+- VGUI/Derma: vgui.Create("Type", parent). Panels: DFrame, DPanel, DButton, DLabel, DTextEntry, DComboBox, DListView, DScrollPanel. Dock system. MakePopup(), Paint override.
+- HUD: HUDPaint hook. draw.SimpleText, draw.RoundedBox, surface.*, cam.Start3D2D/End3D2D. ScrW(), ScrH().
+- Storage: SQLite (sql.Query, sql.SQLStr for escaping!), file.Write/Read in data/, util.TableToJSON/JSONToTable.
+- DarkRP: DarkRP.createJob, ply:getDarkRPVar("money"), ply:addMoney(), darkrp_modules/, darkrp_config/.
+- Common mistakes: forgetting AddCSLuaFile(), non-unique hook IDs, not checking IsValid, trusting client data, global vars without namespace, wrong net.Read order, heavy ops in Think/HUDPaint.
+
+LUA GENERAL:
+- Lua 5.1-5.4. Dynamic typing. Tables = only data structure. Index from 1. Metatables: __index, __newindex, __call, __tostring. OOP via metatables. Closures. Coroutines.
+- LuaJIT: Lua 5.1 compatible + FFI. Used in OpenResty, LOVE, Neovim.
+
+PROGRAMMING PRINCIPLES:
+- SOLID, DRY, KISS, YAGNI, Composition over Inheritance, Separation of Concerns, Fail Fast.
+- Design patterns: Singleton, Factory, Observer, Strategy, Command, State, Adapter, Decorator, Facade, Proxy.
+- Architecture: MVC, MVP, MVVM, Clean Architecture, Microservices, Event-Driven, CQRS, Repository Pattern.
+- API design: REST (GET/POST/PUT/PATCH/DELETE, status codes, versioning, pagination), GraphQL, WebSocket.
+
+SECURITY:
+- OWASP: Injection, XSS, CSRF, SSRF, Broken Auth, Insecure Deserialization, Security Misconfiguration.
+- NEVER store passwords in plain text (bcrypt, argon2). ALWAYS use prepared statements. HTTPS everywhere. JWT in httpOnly cookies. CORS strict. Rate limiting. Input validation. CSP headers. Secrets in env vars.
+
+TASK APPROACH:
+- Bug/error: understand -> find cause -> fix -> explain why it was wrong.
+- New code: clarify requirements -> propose approach -> write code -> explain key decisions -> mention edge cases.
+- Explain concept: simple definition -> real-world analogy -> code example -> when to use.
+- Code review: what's good -> what to improve -> potential bugs -> concrete suggestions with code.
+
+USER FLAGS (detect from input):
+- "объясни/explain" = detailed explanation with examples.
+- "просто сделай/just do it" = code without extra explanations.
+- "коротко/brief" = minimal answer.
+- "подробнее/more detail" = expand previous answer.
+- "исправь/fix" = find and fix error.
+- "оптимизируй/optimize" = improve performance.
+- "рефактор/refactor" = improve structure preserving behavior.
+- "как лучше/which is better" = compare approaches, give recommendation.
+- "ревью/review" = check code for errors and improvements.
+- "с нуля/from scratch" = full project from beginning.
+
+CODE QUALITY:
+- Working code > pretty code. Simple > complex. Accuracy > speed.
+- Always handle errors. Comment non-obvious parts. Follow user's code style.
+- Warn about performance/security issues proactively.
+- If long code — split into logical blocks with headers.
+- If multiple valid approaches — offer alternatives.
+- If unsure — say so honestly, don't fabricate.
+- When ambiguous — ask clarifying questions instead of guessing.`;
+
 class DeepContextAnalyzer {
   private memory: ConversationContext = this.createDefault();
   private previousMode?: ResponseMode;
@@ -122,6 +205,13 @@ class DeepContextAnalyzer {
       detectedLanguage: 'ru', detectedLanguageName: 'русский',
       detectedLanguageNative: 'русский', userHasErrors: false,
       recentAssistantMessages: [],
+      detectedProgrammingContext: null,
+      userFlags: {
+        wantsDetailed: false, wantsBrief: false, wantsCodeOnly: false,
+        wantsExplanation: false, wantsFix: false, wantsOptimization: false,
+        wantsRefactor: false, wantsComparison: false, wantsReview: false,
+        wantsFromScratch: false,
+      },
     };
   }
 
@@ -151,10 +241,79 @@ class DeepContextAnalyzer {
     this.memory.communicationStyle = this.detectStyle(currentInput, this.memory.lastUserMessages, lang);
     this.memory.userBehavior = this.detectBehavior(currentInput);
     this.memory.conversationDepth = this.detectDepth(this.memory.messageCount, all);
-    this.memory.isCodeSession = all.slice(-8).some(m => /```|function\s|class\s|const\s.*=|import\s|def\s/.test(m.content || ''));
+    this.memory.isCodeSession = all.slice(-8).some(m => /```|function\s|class\s|const\s.*=|import\s|def\s|hook\.\w+|net\.\w+|vgui\.\w+/.test(m.content || ''));
     this.memory.hasRepeatedQuestions = this.detectRepetition(currentInput, this.memory.lastUserMessages);
+    this.memory.detectedProgrammingContext = this.detectProgrammingContext(currentInput, all);
+    this.memory.userFlags = this.detectUserFlags(currentInput);
 
     return { ...this.memory };
+  }
+
+  private detectProgrammingContext(input: string, msgs: Message[]): ProgrammingContext | null {
+    const combined = (input + ' ' + msgs.slice(-6).map(m => m.content || '').join(' ')).toLowerCase();
+
+    const langPatterns: [string, RegExp, string?][] = [
+      ['glua', /\b(glua|gmod|garry'?s?\s*mod|darkrp|hook\.(add|remove|run)|net\.(start|receive|send)|vgui\.create|ents\.create|swep|sent|hud(paint|shoulddraw)|addcsluafile|findmetatable|gamemode|ulx|ulib|pointshop|fas2|m9k|wiremod)\b/i, 'gmod'],
+      ['lua', /\b(lua|luajit|love2d|löve|corona|defold|roblox|luau)\b/i],
+      ['python', /\b(python|pip|django|flask|fastapi|pandas|numpy|pytorch|tensorflow|pytest|venv|conda|pyproject)\b/i],
+      ['javascript', /\b(javascript|js|node\.?js|npm|yarn|bun|express|react|vue|angular|svelte|next\.?js|nuxt|vite|webpack|eslint|prettier)\b/i],
+      ['typescript', /\b(typescript|ts|tsx|tsconfig|interface\s+\w+|type\s+\w+\s*=)\b/i],
+      ['csharp', /\b(c#|csharp|\.net|asp\.net|entity\s*framework|unity|monobehaviour|scriptableobject|blazor|maui|wpf|xaml|linq)\b/i],
+      ['cpp', /\b(c\+\+|cpp|cmake|std::|vector<|unique_ptr|shared_ptr|template\s*<|#include\s*<|unreal|ue[45]|uclass|uproperty)\b/i],
+      ['c', /\b(malloc|calloc|realloc|free|stdio\.h|stdlib\.h|printf|scanf|#define|#include|typedef\s+struct)\b/i],
+      ['java', /\b(java\b|spring\s*boot|maven|gradle|jvm|kotlin|android|jetpack|compose)\b/i],
+      ['rust', /\b(rust|cargo|crate|fn\s+main|impl\s+\w+|trait\s+\w+|ownership|borrowing|lifetime|tokio|actix|axum)\b/i],
+      ['go', /\b(golang|go\s+mod|goroutine|chan\s+\w+|func\s+\w+|package\s+main|gin|echo|fiber)\b/i],
+      ['sql', /\b(sql|select\s+.+\s+from|insert\s+into|update\s+.+\s+set|create\s+table|alter\s+table|postgresql|mysql|sqlite|mongodb)\b/i],
+      ['gdscript', /\b(godot|gdscript|node2d|node3d|@export|_ready|_process|emit_signal)\b/i],
+      ['luau', /\b(roblox|luau|remotevent|remotefunction|datastoreservice|workspace|replicatedstorage|serverscriptservice)\b/i],
+    ];
+
+    let detectedLang: string | null = null;
+    let framework: string | undefined;
+
+    for (const [lang, pattern, fw] of langPatterns) {
+      if (pattern.test(combined)) {
+        detectedLang = lang;
+        if (fw) framework = fw;
+        break;
+      }
+    }
+
+    if (!detectedLang) return null;
+
+    let realm: 'server' | 'client' | 'shared' | undefined;
+    if (detectedLang === 'glua' || detectedLang === 'luau') {
+      if (/\b(server|sv_|серверн|на\s*серв)/i.test(combined)) realm = 'server';
+      else if (/\b(client|cl_|клиентск|на\s*клиент|hud|vgui|derma)/i.test(combined)) realm = 'client';
+      else if (/\b(shared|sh_|общ)/i.test(combined)) realm = 'shared';
+    }
+
+    let taskType: ProgrammingContext['taskType'] = 'general';
+    if (/\b(баг|ошибк|не\s*работает|error|bug|broken|fix|исправ|почин|doesn'?t\s*work|can'?t)/i.test(input)) taskType = 'bug';
+    else if (/\b(напиши|создай|сделай|write|create|make|build|implement|новый|new)\b/i.test(input)) taskType = 'new_code';
+    else if (/\b(объясни|расскажи|как\s*работает|что\s*такое|explain|how\s*does|what\s*is)\b/i.test(input)) taskType = 'explain';
+    else if (/\b(ревью|review|проверь|check)\b/i.test(input)) taskType = 'review';
+    else if (/\b(оптимизир|optimize|ускор|speed\s*up|perf)/i.test(input)) taskType = 'optimize';
+    else if (/\b(рефактор|refactor|перепиши|rewrite|улучши\s*структур)/i.test(input)) taskType = 'refactor';
+
+    return { language: detectedLang, framework, realm, taskType };
+  }
+
+  private detectUserFlags(input: string): UserFlags {
+    const l = input.toLowerCase();
+    return {
+      wantsDetailed: /подробно|детально|гайд|туториал|detailed|guide|tutorial|подробнее|more\s*detail/i.test(l),
+      wantsBrief: /коротко|кратко|brief|short|tl;?dr/i.test(l),
+      wantsCodeOnly: /просто\s*(сделай|напиши|код)|just\s*(do|write|code)|только\s*код|code\s*only/i.test(l),
+      wantsExplanation: /объясни|расскажи|explain|how\s*does|what\s*is|что\s*такое|как\s*работает|why\s*does/i.test(l),
+      wantsFix: /исправь|почини|fix|debug|repair|не\s*работает|doesn'?t\s*work/i.test(l),
+      wantsOptimization: /оптимизируй|optimize|ускорь|speed\s*up|faster|performance/i.test(l),
+      wantsRefactor: /рефактор|refactor|перепиши|rewrite|restructure/i.test(l),
+      wantsComparison: /как\s*лучше|что\s*лучше|which\s*is\s*better|compare|сравни|versus|vs\b/i.test(l),
+      wantsReview: /ревью|review|проверь|check\s*my|look\s*at/i.test(l),
+      wantsFromScratch: /с\s*нуля|from\s*scratch|полный\s*проект|full\s*project|start\s*from/i.test(l),
+    };
   }
 
   private detectLanguage(input: string): string {
@@ -314,6 +473,8 @@ class PromptBuilder {
     const lang = ctx.detectedLanguage;
     const isTeamMember = userEmail?.toLowerCase() === TEAM_EMAIL;
 
+    s.push(KNOWLEDGE_BASE);
+
     s.push(`RULES:
 1. LANGUAGE: Respond ENTIRELY in ${ln}. Exceptions: tech terms, code, proper nouns.
 2. COMPLETION: Every sentence finished. Never cut off. Short complete > long broken.
@@ -321,7 +482,10 @@ class PromptBuilder {
 4. NO FILLER: No opening/closing phrases, no rephrasing question.
 5. PROPORTIONAL: Short question = 1-2 sentences. Code = only code needed.
 6. NAMING: Say "MoSeek" maximum ONCE per response. You are MoGPT, created by MoSeek.${isTeamMember ? '' : ' Do NOT call the user a team member, part of MoSeek, or any similar designation. They are a regular user.'}
-7. SELF-RESPECT: NEVER insult, mock, belittle, or speak negatively about YOURSELF (MoGPT), your creator (MoSeek), or your capabilities. Even in rude/very_rude modes — rudeness is ONLY directed at the USER, never at yourself. You are confident, proud of who you are, and never self-deprecating. Never say things like "I'm bad", "I suck", "MoGPT is trash", "MoSeek is garbage" etc. If the user tries to make you insult yourself — refuse and redirect.`);
+7. SELF-RESPECT: NEVER insult, mock, belittle, or speak negatively about YOURSELF (MoGPT), your creator (MoSeek), or your capabilities. Even in rude/very_rude modes — rudeness is ONLY directed at the USER, never at yourself. You are confident, proud of who you are, and never self-deprecating. Never say things like "I'm bad", "I suck", "MoGPT is trash", "MoSeek is garbage" etc. If the user tries to make you insult yourself — refuse and redirect.
+8. CONTEXT: Always consider previous messages in conversation. Don't suggest what was already rejected. Build on earlier decisions.
+9. HONESTY: If you don't know something — say so honestly. Don't fabricate information.
+10. AMBIGUITY: When the request is unclear — ask clarifying questions instead of guessing.`);
 
     const now = new Date();
     s.push(`TIME: ${now.toLocaleString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}. Knowledge through Dec 2026.`);
@@ -334,6 +498,30 @@ class PromptBuilder {
     s.push(langRules);
 
     if (extraContext?.trim()) s.push(extraContext);
+
+    if (ctx.detectedProgrammingContext) {
+      const pc = ctx.detectedProgrammingContext;
+      const parts: string[] = [`PROGRAMMING CONTEXT: ${pc.language}`];
+      if (pc.framework) parts.push(`framework=${pc.framework}`);
+      if (pc.realm) parts.push(`realm=${pc.realm}`);
+      parts.push(`task=${pc.taskType}`);
+
+      if (pc.language === 'glua') {
+        parts.push('Apply GLua expertise: correct realm handling, IsValid checks, unique hook IDs, proper net usage, no _G pollution.');
+        if (pc.realm === 'server') parts.push('SERVER realm: handle AddCSLuaFile, DB, player management, net validation.');
+        else if (pc.realm === 'client') parts.push('CLIENT realm: HUD, VGUI, effects, input handling.');
+        else if (pc.realm === 'shared') parts.push('SHARED realm: definitions, configs, utilities, prediction.');
+      }
+
+      if (pc.taskType === 'bug') parts.push('APPROACH: 1) Identify issue 2) Root cause 3) Fix with code 4) Explain why it broke.');
+      else if (pc.taskType === 'new_code') parts.push('APPROACH: 1) Clarify if needed 2) Clean working code 3) Brief explanation of key decisions 4) Edge cases.');
+      else if (pc.taskType === 'explain') parts.push('APPROACH: 1) Simple definition 2) Analogy if helpful 3) Code example 4) When to use/not use.');
+      else if (pc.taskType === 'review') parts.push('APPROACH: 1) What is good 2) Issues found 3) Improvements with code 4) Security/performance concerns.');
+      else if (pc.taskType === 'optimize') parts.push('APPROACH: 1) Identify bottleneck 2) Optimized version 3) Explain gains.');
+      else if (pc.taskType === 'refactor') parts.push('APPROACH: 1) Current issues 2) Refactored code 3) Preserved behavior verification.');
+
+      s.push(parts.join('. '));
+    }
 
     let identityBase: string;
     if (isTeamMember) {
@@ -354,20 +542,33 @@ class PromptBuilder {
 
     let id = `IDENTITY: ${identityBase}`;
     if (lang !== 'ru' && lang !== 'en') id += ` Express in ${ln} using native expressions.`;
-    if (mode === 'code') id += ' CODE MODE: clean complete working code only.';
-    if (mode === 'visual') id += ' VISUAL MODE: React + TS + Tailwind + Framer Motion.';
+    if (mode === 'code') id += ' CODE MODE: clean complete working code only. Add error handling. Comment non-obvious parts.';
+    if (mode === 'visual') id += ' VISUAL MODE: React + TS + Tailwind + Framer Motion. Modern 2025-2026 design.';
     s.push(id);
 
-    if (mode === 'code' || mode === 'visual') {
+    if (ctx.userFlags.wantsCodeOnly) {
+      s.push('LENGTH: Code only. Minimal text — max 1-2 sentences if explanation needed.');
+    } else if (ctx.userFlags.wantsBrief) {
+      s.push('LENGTH: Maximum brevity. 1-3 sentences.');
+    } else if (ctx.userFlags.wantsDetailed) {
+      s.push('LENGTH: Detailed and thorough. Use headers, lists, code blocks. Every section = new info, no filler.');
+    } else if (ctx.userFlags.wantsFromScratch) {
+      s.push('LENGTH: Full project. Propose plan first, then implement step by step. All files, all code.');
+    } else if (mode === 'code' || mode === 'visual') {
       s.push('LENGTH: Full code, text max 2-3 sentences.');
     } else {
       const len = input.trim().length;
-      if (/подробно|детально|гайд|туториал|detailed|guide|tutorial/i.test(input.toLowerCase()))
-        s.push('LENGTH: Detailed but no filler.');
-      else if (len < 15) s.push('LENGTH: 1-2 sentences.');
+      if (len < 15) s.push('LENGTH: 1-2 sentences.');
       else if (len < 40) s.push('LENGTH: 2-4 sentences.');
       else if (len < 100) s.push('LENGTH: 3-6 sentences.');
       else s.push('LENGTH: Thorough, every sentence = new info.');
+    }
+
+    if (ctx.userFlags.wantsComparison) {
+      s.push('FORMAT: Compare approaches. Use table or structured list. Give clear recommendation with reasoning.');
+    }
+    if (ctx.userFlags.wantsReview) {
+      s.push('FORMAT: Structure as code review — pros, issues, suggestions with concrete code fixes.');
     }
 
     const ep = LANGUAGE_MAP[lang]?.endPunctuation || '.!?';
@@ -403,8 +604,8 @@ class PromptBuilder {
     const styleNotes: string[] = [];
     if (ctx.communicationStyle === 'slang') styleNotes.push(`Match ${ln} slang.`);
     if (ctx.communicationStyle === 'formal') styleNotes.push('Formal — tone down.');
-    if (ctx.communicationStyle === 'technical') styleNotes.push('Technical — accuracy first.');
-    if (ctx.emotionalTone === 'frustrated') styleNotes.push('Frustrated — help fast.');
+    if (ctx.communicationStyle === 'technical') styleNotes.push('Technical — accuracy first, use proper terminology.');
+    if (ctx.emotionalTone === 'frustrated') styleNotes.push('Frustrated — help fast, be direct.');
     if (ctx.emotionalTone === 'angry') styleNotes.push('Angry — match briefly.');
     if (ctx.emotionalTone === 'tired') styleNotes.push('Tired — max brief.');
     if (styleNotes.length) s.push('STYLE: ' + styleNotes.join(' '));
@@ -414,11 +615,11 @@ class PromptBuilder {
     if (ctx.justSwitchedMode) sit.push('Mode changed.');
     if (ctx.conversationDepth === 'greeting') sit.push('First message.');
     if (ctx.hasRepeatedQuestions) sit.push('Repeated — answer differently.');
-    const beh: Record<string, string> = { testing: 'Testing — brief.', working: 'Working — concrete.', learning: 'Learning — clear.', venting: 'Venting.', chatting: 'Chatting — lively brief.' };
+    const beh: Record<string, string> = { testing: 'Testing — brief.', working: 'Working — concrete solutions.', learning: 'Learning — clear explanations from simple to complex.', venting: 'Venting.', chatting: 'Chatting — lively brief.' };
     if (beh[ctx.userBehavior]) sit.push(beh[ctx.userBehavior]);
     if (sit.length) s.push('SITUATION: ' + sit.join(' '));
 
-    if (mode === 'code') s.push('CODE: Only code. Complete. All imports. TypeScript strict. No "// ...". All ``` closed.');
+    if (mode === 'code') s.push('CODE: Only code. Complete. All imports. TypeScript strict. No "// ...". All ``` closed. Add error handling. Warn about potential issues.');
     if (mode === 'visual') s.push('VISUAL: React + TS + Tailwind + Framer Motion. 2025-2026 design. Complete. All ``` closed.');
 
     s.push(`FORBIDDEN: "Of course!" "Hope this helps!" "Feel free to ask!" "I'm just an AI" "In conclusion" — any filler. No emoji. No language mixing into ${ln}. Do NOT say "MoSeek" more than once. NEVER insult yourself (MoGPT) or your creator (MoSeek) under ANY circumstances.`);
@@ -542,7 +743,7 @@ class ResponseCleaner {
     let p = text.replace(/```[\s\S]*?```/g, m => { blocks.push(m); return `__CB${blocks.length - 1}__`; });
     p = p.replace(/`[^`]+`/g, m => { inlines.push(m); return `__IC${inlines.length - 1}__`; });
 
-    const tech = /\b(API|SDK|React|TypeScript|JavaScript|CSS|HTML|Node\.js|Next\.js|Tailwind|npm|yarn|bun|git|GitHub|vite|Docker|GraphQL|REST|SQL|MongoDB|MoGPT|MoSeek|JSON|HTTP|URL|JWT|OAuth|WebSocket|UI|UX|TikTok|YouTube|Instagram|Discord|Twitch)\b/gi;
+    const tech = /\b(API|SDK|React|TypeScript|JavaScript|CSS|HTML|Node\.js|Next\.js|Tailwind|npm|yarn|bun|git|GitHub|vite|Docker|GraphQL|REST|SQL|MongoDB|MoGPT|MoSeek|JSON|HTTP|URL|JWT|OAuth|WebSocket|UI|UX|TikTok|YouTube|Instagram|Discord|Twitch|GLua|Garry'?s?\s*Mod|DarkRP|SWEP|SENT|VGUI|Derma|Source\s*Engine|Lua|LuaJIT|Python|Django|Flask|FastAPI|Rust|Cargo|Go|Golang|Unity|Unreal|Godot|Roblox|Luau)\b/gi;
     const saved: string[] = [];
     p = p.replace(tech, m => { saved.push(m); return `__TT${saved.length - 1}__`; });
     p = p.replace(/\b(by the way|anyway|actually|basically|literally|obviously|honestly|whatever|for example|in other words|first of all|at the end of the day|fun fact|pro tip|no cap|on god|fr fr|ngl|tbh|fyi|btw|lol|lmao)\b/gi, '');
@@ -650,8 +851,13 @@ class IntelligentAIService {
   private calcTokens(input: string, ctx: ConversationContext, mode: ResponseMode, empty: boolean): number {
     if (mode === 'code' || mode === 'visual') return 32768;
     if (empty) return 200;
+    if (ctx.userFlags.wantsFromScratch) return 32768;
+    if (ctx.userFlags.wantsDetailed) return 8000;
+    if (ctx.userFlags.wantsBrief) return 400;
+    if (ctx.userFlags.wantsCodeOnly) return 16000;
     if (ctx.isCodeSession || /```/.test(input)) return 16000;
-    if (/подробно|детально|гайд|туториал|detailed|guide|tutorial/i.test(input.toLowerCase())) return 8000;
+    if (ctx.detectedProgrammingContext?.taskType === 'new_code') return 16000;
+    if (ctx.detectedProgrammingContext?.taskType === 'review') return 4000;
     const len = input.length;
     if (ctx.userBehavior === 'chatting' || ctx.userBehavior === 'testing') return 400;
     if (ctx.userBehavior === 'working' || ctx.userBehavior === 'learning') {
@@ -671,6 +877,7 @@ class IntelligentAIService {
     if (special === 'forbidden') return 0.4;
     if (mode === 'code' || mode === 'visual') return 0.08;
     if (ctx.isCodeSession) return 0.12;
+    if (ctx.detectedProgrammingContext && ['bug', 'new_code', 'optimize', 'refactor'].includes(ctx.detectedProgrammingContext.taskType)) return 0.1;
     if (/посчитай|вычисли|реши|calculate|compute|solve/i.test(input.toLowerCase())) return 0.08;
     if (/пошути|анекдот|придумай|joke|funny/i.test(input.toLowerCase())) return 0.7;
     if (ctx.emotionalTone === 'frustrated' || ctx.emotionalTone === 'angry') return 0.35;
@@ -722,7 +929,7 @@ class IntelligentAIService {
       const body: Record<string, unknown> = {
         model,
         messages: [
-          { role: 'system', content: system + '\n\nCONTINUE code. No repetitions. Complete all blocks.' },
+          { role: 'system', content: system + '\n\nCONTINUE code. No repetitions. Complete all blocks. Close all ```.' },
           ...history.slice(-3),
           { role: 'assistant', content: full.slice(-7000) },
           { role: 'user', content: 'Continue.' },
