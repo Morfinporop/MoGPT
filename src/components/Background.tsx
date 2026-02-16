@@ -5,17 +5,17 @@ interface Particle {
   x: number;
   y: number;
   size: number;
-  speed: number;
-  opacity: number;
+  baseOpacity: number;
   twinkleSpeed: number;
   offset: number;
+  driftX: number;
+  driftY: number;
 }
 
 export function Background() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>(0);
   const particlesRef = useRef<Particle[]>([]);
-  const mouseRef = useRef({ x: -1000, y: -1000 });
   const { theme } = useThemeStore();
 
   useEffect(() => {
@@ -34,27 +34,28 @@ export function Background() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
 
-      // Пересоздаём частицы
-      const count = Math.floor((canvas.width * canvas.height) / 25000);
+      const count = Math.floor((canvas.width * canvas.height) / 18000);
+
       particlesRef.current = Array.from({ length: count }, () => ({
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
-        size: Math.random() * 1.5 + 0.5,
-        speed: Math.random() * 0.15 + 0.05,
-        opacity: Math.random() * 0.5 + 0.1,
-        twinkleSpeed: Math.random() * 1.5 + 0.5,
+        size: Math.random() * 1.8 + 0.3,
+        baseOpacity: Math.random() * 0.4 + 0.1,
+        twinkleSpeed: Math.random() * 1.2 + 0.3,
         offset: Math.random() * Math.PI * 2,
+        driftX: (Math.random() - 0.5) * 0.08,
+        driftY: -(Math.random() * 0.12 + 0.02),
       }));
-    };
-
-    const onMouseMove = (e: MouseEvent) => {
-      mouseRef.current.x = e.clientX;
-      mouseRef.current.y = e.clientY;
     };
 
     resize();
     window.addEventListener('resize', resize);
-    window.addEventListener('mousemove', onMouseMove);
+
+    const blobs = [
+      { xRatio: 0.15, yRatio: 0.25, radius: 380, color: '139, 92, 246', phaseX: 0, phaseY: 0.5 },
+      { xRatio: 0.82, yRatio: 0.7, radius: 420, color: '99, 102, 241', phaseX: 2, phaseY: 1.5 },
+      { xRatio: 0.5, yRatio: 0.85, radius: 300, color: '168, 85, 247', phaseX: 4, phaseY: 3 },
+    ];
 
     const animate = (timestamp: number) => {
       const t = timestamp * 0.001;
@@ -63,62 +64,53 @@ export function Background() {
 
       ctx.clearRect(0, 0, w, h);
 
-      // 1. Два мягких градиентных пятна
-      const blobs = [
-        { x: w * 0.2, y: h * 0.3, r: 350, color: '139, 92, 246' },
-        { x: w * 0.8, y: h * 0.7, r: 400, color: '99, 102, 241' },
-      ];
+      // Градиентные пятна
+      blobs.forEach((blob) => {
+        const pulse = Math.sin(t * 0.15 + blob.phaseX) * 0.12 + 0.88;
+        const cx = blob.xRatio * w + Math.sin(t * 0.06 + blob.phaseX) * 40;
+        const cy = blob.yRatio * h + Math.cos(t * 0.05 + blob.phaseY) * 30;
+        const r = blob.radius * pulse;
 
-      blobs.forEach((blob, i) => {
-        const pulse = Math.sin(t * 0.2 + i * 2) * 0.15 + 0.85;
-        const ox = Math.sin(t * 0.1 + i) * 30;
-        const oy = Math.cos(t * 0.08 + i) * 20;
-
-        const grad = ctx.createRadialGradient(
-          blob.x + ox, blob.y + oy, 0,
-          blob.x + ox, blob.y + oy, blob.r * pulse
-        );
-        grad.addColorStop(0, `rgba(${blob.color}, 0.06)`);
-        grad.addColorStop(0.5, `rgba(${blob.color}, 0.02)`);
+        const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+        grad.addColorStop(0, `rgba(${blob.color}, 0.055)`);
+        grad.addColorStop(0.4, `rgba(${blob.color}, 0.025)`);
         grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
         ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, w, h);
-      });
-
-      // 2. Частицы-звёзды
-      particlesRef.current.forEach((p) => {
-        p.y -= p.speed;
-        if (p.y < -5) {
-          p.y = h + 5;
-          p.x = Math.random() * w;
-        }
-
-        const twinkle = Math.sin(t * p.twinkleSpeed + p.offset) * 0.5 + 0.5;
-        const alpha = p.opacity * (0.3 + twinkle * 0.7);
-
-        // Реакция на мышь — мягкое свечение рядом
-        const dx = p.x - mouseRef.current.x;
-        const dy = p.y - mouseRef.current.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        const boost = dist < 150 ? (1 - dist / 150) * 0.5 : 0;
-
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size + boost * 2, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(200, 180, 255, ${alpha + boost})`;
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
         ctx.fill();
       });
 
-      // 3. Курсорное свечение
-      const mx = mouseRef.current.x;
-      const my = mouseRef.current.y;
-      if (mx > 0 && my > 0) {
-        const glow = ctx.createRadialGradient(mx, my, 0, mx, my, 120);
-        glow.addColorStop(0, 'rgba(139, 92, 246, 0.04)');
-        glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        ctx.fillStyle = glow;
-        ctx.fillRect(mx - 120, my - 120, 240, 240);
-      }
+      // Частицы
+      particlesRef.current.forEach((p) => {
+        p.x += p.driftX;
+        p.y += p.driftY;
+
+        if (p.y < -5) { p.y = h + 5; p.x = Math.random() * w; }
+        if (p.x < -5) p.x = w + 5;
+        if (p.x > w + 5) p.x = -5;
+
+        const twinkle = Math.sin(t * p.twinkleSpeed + p.offset);
+        const alpha = p.baseOpacity * (0.4 + (twinkle * 0.5 + 0.5) * 0.6);
+
+        // Мягкое гало
+        if (p.size > 1) {
+          const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 3);
+          glow.addColorStop(0, `rgba(180, 160, 255, ${alpha * 0.25})`);
+          glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+          ctx.fillStyle = glow;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size * 3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Точка
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(210, 200, 255, ${alpha})`;
+        ctx.fill();
+      });
 
       animationRef.current = requestAnimationFrame(animate);
     };
@@ -127,7 +119,6 @@ export function Background() {
 
     return () => {
       window.removeEventListener('resize', resize);
-      window.removeEventListener('mousemove', onMouseMove);
       cancelAnimationFrame(animationRef.current);
     };
   }, [theme]);
