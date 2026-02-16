@@ -1034,10 +1034,9 @@ class UniversalAIService {
       if (res.finishReason === 'length' && /```/.test(res.content)) {
         const result = await this.continueCode(res.content, systemPrompt, history, model, maxTokens, temp, ctx.detectedLanguage);
 
-        // Обновляем настроение фона
         try {
           const newMood = moodAnalyzer.analyze(input, result.content, ctx.emotionalTone);
-          useMoodStore.getState().setMood(newMood);
+          useMoodStore.getState().pushMood(newMood);
         } catch (e) {
           console.error('Mood analysis error:', e);
         }
@@ -1048,10 +1047,9 @@ class UniversalAIService {
 
       const cleaned = this.cleaner.clean(res.content, ctx.detectedLanguage);
 
-      // Обновляем настроение фона
       try {
         const newMood = moodAnalyzer.analyze(input, cleaned, ctx.emotionalTone);
-        useMoodStore.getState().setMood(newMood);
+        useMoodStore.getState().pushMood(newMood);
       } catch (e) {
         console.error('Mood analysis error:', e);
       }
@@ -1212,14 +1210,18 @@ class UniversalAIService {
   }
 
   private fallbackError(rudeness: RudenessMode): { content: string } {
-    const e: Record<RudenessMode, string> = { polite: 'Произошла ошибка. Попробуй ещё раз.', rude: 'Что-то сломалось. Давай заново.', very_rude: 'Всё наебнулось. Пробуй заново блять.' };
+    const e: Record<RudenessMode, string> = {
+      polite: 'Произошла ошибка. Попробуй ещё раз.',
+      rude: 'Что-то сломалось. Давай заново.',
+      very_rude: 'Всё наебнулось. Пробуй заново блять.',
+    };
     return { content: e[rudeness] };
   }
 
   resetConversation(): void {
     this.analyzer.reset();
     moodAnalyzer.reset();
-    useMoodStore.getState().setMood('neutral');
+    useMoodStore.getState().reset();
   }
 }
 
