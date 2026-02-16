@@ -6,23 +6,17 @@ export class MoodAnalyzer {
   private history: Mood[] = [];
 
   analyze(userMessage: string, assistantResponse: string, emotionalTone: string): Mood {
-    const combined = (userMessage + ' ' + assistantResponse).toLowerCase();
+    const userLower = userMessage.toLowerCase();
 
     let mood: Mood = 'neutral';
 
-    // Приоритет: анализируем пользователя в первую очередь
-    const userLower = userMessage.toLowerCase();
-
-    // Агрессия / злость
     if (this.matchesAny(userLower, [
       /блять|нахуй|ёбан|пиздец|сука|хуй|заебал|ебать/,
       /fuck|shit|damn|wtf|stfu|hate|angry|furious/,
       /!!!{2,}/,
-      /КАПС.{10,}/,
     ])) {
       mood = 'angry';
     }
-    // Фрустрация
     else if (this.matchesAny(userLower, [
       /не\s*работает|ошибк|баг|сломал|не\s*могу|не\s*получается|бесит/,
       /doesn'?t\s*work|error|bug|broken|can'?t|failing|crash/,
@@ -30,7 +24,6 @@ export class MoodAnalyzer {
     ])) {
       mood = 'frustrated';
     }
-    // Грусть
     else if (this.matchesAny(userLower, [
       /грустн|плохо|хреново|тоскл|одинок|депресс|устал|выгор/,
       /sad|depressed|lonely|tired|exhausted|hopeless|miserable/,
@@ -38,7 +31,6 @@ export class MoodAnalyzer {
     ])) {
       mood = 'sad';
     }
-    // Возбуждение / восторг
     else if (this.matchesAny(userLower, [
       /ахуенн|офигенн|пиздат|база|кайф|ору|ахаха|вау|огонь|топ/,
       /amazing|awesome|incredible|wow|omg|perfect|love\s*it|insane|fire/,
@@ -47,14 +39,12 @@ export class MoodAnalyzer {
     ])) {
       mood = 'excited';
     }
-    // Позитив
     else if (this.matchesAny(userLower, [
       /спасибо|круто|класс|супер|помог|хорошо|отлично|молодец/,
       /thanks?|great|cool|nice|good|helped|beautiful|lovely|appreciate/,
     ])) {
       mood = 'positive';
     }
-    // Креатив
     else if (this.matchesAny(userLower, [
       /напиши\s*(?:рассказ|стих|историю|сказку|песню|сценарий)/,
       /придумай|сочини|фантази|воображ|идея\s*для/,
@@ -62,7 +52,6 @@ export class MoodAnalyzer {
     ])) {
       mood = 'creative';
     }
-    // Фокус / работа
     else if (this.matchesAny(userLower, [
       /напиши\s*код|сделай\s*функци|реализуй|имплемент|рефактор|оптимиз/,
       /write\s*code|implement|refactor|optimize|build|develop|architect/,
@@ -70,7 +59,6 @@ export class MoodAnalyzer {
     ])) {
       mood = 'focused';
     }
-    // Спокойствие
     else if (this.matchesAny(userLower, [
       /расскажи|объясни|что\s*такое|как\s*работает|подскажи/,
       /explain|tell\s*me|what\s*is|how\s*does|describe|help\s*me\s*understand/,
@@ -78,16 +66,13 @@ export class MoodAnalyzer {
       mood = 'calm';
     }
 
-    // Учитываем emotionalTone от ContextAnalyzer
     if (emotionalTone === 'angry' && mood === 'neutral') mood = 'angry';
     if (emotionalTone === 'frustrated' && mood === 'neutral') mood = 'frustrated';
     if (emotionalTone === 'excited' && mood === 'neutral') mood = 'excited';
     if (emotionalTone === 'tired' && mood === 'neutral') mood = 'sad';
 
-    // Сглаживание: не скакать резко
     if (this.history.length > 0) {
       const last = this.history[this.history.length - 1];
-      // Если тон нейтральный а до этого был сильный — задержать
       if (mood === 'neutral' && ['angry', 'excited', 'frustrated'].includes(last)) {
         mood = last;
       }
