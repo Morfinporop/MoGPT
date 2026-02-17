@@ -22,10 +22,9 @@ interface Orb {
   pulseOffset: number;
   pulseSpeed: number;
   mass: number;
-  // New properties for enhanced visuals
-  rotationAngle: number;
-  rotationSpeed: number;
-  distortionPhase: number;
+  rotAngle: number;
+  rotSpeed: number;
+  breathePhase: number;
 }
 
 interface Star {
@@ -37,7 +36,7 @@ interface Star {
   offset: number;
   driftY: number;
   driftX: number;
-  warmth: number; // 0 = cool blue, 1 = warm gold
+  warmth: number;
 }
 
 interface Particle {
@@ -99,17 +98,14 @@ export function Background() {
   function spawnParticles(mood: Mood) {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const w = canvas.width;
     const h = canvas.height;
     const colors = MOOD_COLORS[mood];
-    const count = 6 + Math.floor(Math.random() * 8);
+    const count = 5 + Math.floor(Math.random() * 6);
 
     for (let i = 0; i < count; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const speed = 0.3 + Math.random() * 1.5;
-      const color = colors[Math.floor(Math.random() * colors.length)];
-
+      const speed = 0.2 + Math.random() * 1.2;
       particlesRef.current.push({
         x: w * 0.5 + (Math.random() - 0.5) * w * 0.15,
         y: h * 0.45 + (Math.random() - 0.5) * h * 0.15,
@@ -117,22 +113,19 @@ export function Background() {
         vy: Math.sin(angle) * speed,
         life: 1,
         maxLife: 2 + Math.random() * 3,
-        size: 1 + Math.random() * 2.5,
-        color,
-        opacity: 0.3 + Math.random() * 0.4,
+        size: 0.8 + Math.random() * 2,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        opacity: 0.2 + Math.random() * 0.35,
       });
     }
-
-    // Limit particles
-    if (particlesRef.current.length > 80) {
-      particlesRef.current = particlesRef.current.slice(-60);
+    if (particlesRef.current.length > 70) {
+      particlesRef.current = particlesRef.current.slice(-50);
     }
   }
 
   function spawnOrb(mood: Mood) {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const w = canvas.width;
     const h = canvas.height;
     const colors = MOOD_COLORS[mood];
@@ -144,9 +137,9 @@ export function Background() {
 
     const angle = Math.random() * Math.PI * 2;
     const speed = (0.3 + Math.random() * 1.2) * physics.speed;
-    const baseRadius = (60 + Math.random() * 100) * physics.size;
+    const baseRadius = (55 + Math.random() * 90) * physics.size;
 
-    const orb: Orb = {
+    orbsRef.current.push({
       id: idCounterRef.current++,
       x: cx,
       y: cy,
@@ -154,23 +147,21 @@ export function Background() {
       vy: Math.sin(angle) * speed,
       radius: 3,
       targetRadius: baseRadius,
-      color: color,
+      color,
       targetColor: color,
       opacity: 0,
       targetOpacity: 0.05 + physics.energy * 0.035,
       mood,
       birth: Date.now(),
       pulseOffset: Math.random() * Math.PI * 2,
-      pulseSpeed: 0.2 + physics.energy * 0.4,
+      pulseSpeed: 0.25 + physics.energy * 0.4,
       mass: baseRadius,
-      rotationAngle: Math.random() * Math.PI * 2,
-      rotationSpeed: (Math.random() - 0.5) * 0.3,
-      distortionPhase: Math.random() * Math.PI * 2,
-    };
+      rotAngle: Math.random() * Math.PI * 2,
+      rotSpeed: (Math.random() - 0.5) * 0.25,
+      breathePhase: Math.random() * Math.PI * 2,
+    });
 
-    orbsRef.current.push(orb);
-
-    const MAX_ORBS = 12;
+    const MAX_ORBS = 14;
     if (orbsRef.current.length > MAX_ORBS) {
       orbsRef.current[0].targetOpacity = 0;
       orbsRef.current[0].targetRadius = 0;
@@ -185,14 +176,11 @@ export function Background() {
 
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const ctx = canvas.getContext('2d', { alpha: true });
     if (!ctx) return;
 
-    const handleMouseMove = (e: MouseEvent) => {
-      mouseRef.current = { x: e.clientX, y: e.clientY };
-    };
-    window.addEventListener('mousemove', handleMouseMove, { passive: true });
+    const handleMouse = (e: MouseEvent) => { mouseRef.current = { x: e.clientX, y: e.clientY }; };
+    window.addEventListener('mousemove', handleMouse, { passive: true });
 
     const resize = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -205,23 +193,21 @@ export function Background() {
       const w = window.innerWidth;
       const h = window.innerHeight;
 
-      // Stars with varied temperatures
-      const count = Math.floor((w * h) / 18000);
+      const count = Math.floor((w * h) / 20000);
       starsRef.current = Array.from({ length: count }, () => ({
         x: Math.random() * w,
         y: Math.random() * h,
-        size: Math.random() * 1.6 + 0.2,
-        opacity: Math.random() * 0.35 + 0.03,
-        twinkleSpeed: Math.random() * 1.5 + 0.2,
+        size: Math.random() * 1.5 + 0.2,
+        opacity: Math.random() * 0.3 + 0.04,
+        twinkleSpeed: Math.random() * 1.3 + 0.3,
         offset: Math.random() * Math.PI * 2,
-        driftY: -(Math.random() * 0.06 + 0.008),
-        driftX: (Math.random() - 0.5) * 0.02,
+        driftY: -(Math.random() * 0.06 + 0.01),
+        driftX: (Math.random() - 0.5) * 0.015,
         warmth: Math.random(),
       }));
 
       if (orbsRef.current.length === 0) {
-        const startMoods: Mood[] = ['neutral', 'calm', 'focused'];
-        startMoods.forEach(m => spawnOrb(m));
+        (['neutral', 'calm', 'focused'] as Mood[]).forEach(m => spawnOrb(m));
       }
     };
 
@@ -233,31 +219,26 @@ export function Background() {
     const animate = (timestamp: number) => {
       const delta = lastTime ? Math.min((timestamp - lastTime) / 1000, 0.05) : 0.016;
       lastTime = timestamp;
-
       const t = timestamp * 0.001;
       const w = window.innerWidth;
       const h = window.innerHeight;
 
       ctx.clearRect(0, 0, w, h);
 
-      // === Subtle ambient gradient that shifts over time ===
-      const ambientHue1 = Math.sin(t * 0.05) * 10 + 245; // purple range
-      const ambientHue2 = Math.sin(t * 0.03 + 2) * 15 + 260;
-      const ambientGrad = ctx.createRadialGradient(
-        w * 0.5 + Math.sin(t * 0.1) * w * 0.1,
-        h * 0.4 + Math.cos(t * 0.08) * h * 0.1,
-        0,
-        w * 0.5,
-        h * 0.5,
-        Math.max(w, h) * 0.7
+      // ─── Ambient background glow ───
+      const ambGrad = ctx.createRadialGradient(
+        w * 0.5 + Math.sin(t * 0.08) * w * 0.08,
+        h * 0.4 + Math.cos(t * 0.06) * h * 0.08,
+        0, w * 0.5, h * 0.5, Math.max(w, h) * 0.65
       );
-      ambientGrad.addColorStop(0, `hsla(${ambientHue1}, 60%, 50%, 0.012)`);
-      ambientGrad.addColorStop(0.5, `hsla(${ambientHue2}, 50%, 40%, 0.006)`);
-      ambientGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      ctx.fillStyle = ambientGrad;
+      // Using violet from CSS: rgb(124, 107, 245) = #7c6bf5
+      ambGrad.addColorStop(0, `rgba(124, 107, 245, 0.01)`);
+      ambGrad.addColorStop(0.5, `rgba(157, 140, 248, 0.005)`);
+      ambGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = ambGrad;
       ctx.fillRect(0, 0, w, h);
 
-      // === Update and draw orbs ===
+      // ─── Orb physics ───
       const orbs = orbsRef.current;
       const centerX = w * 0.5;
       const centerY = h * 0.45;
@@ -267,42 +248,36 @@ export function Background() {
       for (let i = 0; i < orbs.length; i++) {
         const a = orbs[i];
 
-        // Smooth interpolation
         a.radius = lerp(a.radius, a.targetRadius, delta * 1.8);
         a.opacity = lerp(a.opacity, a.targetOpacity, delta * 1.8);
         a.color = lerpColor(a.color, a.targetColor, delta * 2.5);
-        a.rotationAngle += a.rotationSpeed * delta;
-        a.distortionPhase += delta * 0.5;
+        a.rotAngle += a.rotSpeed * delta;
+        a.breathePhase += delta * 0.5;
 
-        // Gentle attraction to center
+        // Center attraction
         const dxC = centerX - a.x;
         const dyC = centerY - a.y;
         const distC = Math.sqrt(dxC * dxC + dyC * dyC);
-
         if (distC > 40) {
-          const pullStrength = 0.00012;
-          a.vx += (dxC / distC) * pullStrength * distC;
-          a.vy += (dyC / distC) * pullStrength * distC;
+          a.vx += (dxC / distC) * 0.00012 * distC;
+          a.vy += (dyC / distC) * 0.00012 * distC;
         }
 
-        // Mouse interaction — gentle repulsion
+        // Mouse repulsion
         if (mx > 0 && my > 0) {
           const dxM = a.x - mx;
           const dyM = a.y - my;
           const distM = Math.sqrt(dxM * dxM + dyM * dyM);
-          const mouseInfluence = 200;
-
-          if (distM < mouseInfluence && distM > 1) {
-            const force = smoothstep(mouseInfluence, 0, distM) * 0.15;
+          if (distM < 180 && distM > 1) {
+            const force = smoothstep(180, 0, distM) * 0.12;
             a.vx += (dxM / distM) * force;
             a.vy += (dyM / distM) * force;
           }
         }
 
-        // Orb collisions
+        // Orb-orb interactions
         for (let j = i + 1; j < orbs.length; j++) {
           const b = orbs[j];
-
           const dx = b.x - a.x;
           const dy = b.y - a.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
@@ -312,20 +287,17 @@ export function Background() {
             const overlap = minDist - dist;
             const nx = dx / dist;
             const ny = dy / dist;
-
-            const pushForce = overlap * 0.015;
-            const totalMass = a.mass + b.mass;
-
-            a.vx -= nx * pushForce * (b.mass / totalMass);
-            a.vy -= ny * pushForce * (b.mass / totalMass);
-            b.vx += nx * pushForce * (a.mass / totalMass);
-            b.vy += ny * pushForce * (a.mass / totalMass);
-
+            const push = overlap * 0.015;
+            const total = a.mass + b.mass;
+            a.vx -= nx * push * (b.mass / total);
+            a.vy -= ny * push * (b.mass / total);
+            b.vx += nx * push * (a.mass / total);
+            b.vy += ny * push * (a.mass / total);
             const sep = overlap * 0.25;
-            a.x -= nx * sep * (b.mass / totalMass);
-            a.y -= ny * sep * (b.mass / totalMass);
-            b.x += nx * sep * (a.mass / totalMass);
-            b.y += ny * sep * (a.mass / totalMass);
+            a.x -= nx * sep * (b.mass / total);
+            a.y -= ny * sep * (b.mass / total);
+            b.x += nx * sep * (a.mass / total);
+            b.y += ny * sep * (a.mass / total);
           } else if (dist < minDist * 2.2 && dist > 0.1) {
             const repel = 0.002 / (dist * dist) * (a.mass * b.mass);
             const nx = dx / dist;
@@ -337,100 +309,83 @@ export function Background() {
           }
         }
 
-        // Damping
         a.vx *= 0.994;
         a.vy *= 0.994;
-
-        // Movement
         a.x += a.vx;
         a.y += a.vy;
 
-        // Soft boundaries
         const margin = a.radius * 0.25;
-        const bounceForce = 0.04;
-        if (a.x < margin) a.vx += bounceForce;
-        if (a.x > w - margin) a.vx -= bounceForce;
-        if (a.y < margin) a.vy += bounceForce;
-        if (a.y > h - margin) a.vy -= bounceForce;
+        if (a.x < margin) a.vx += 0.04;
+        if (a.x > w - margin) a.vx -= 0.04;
+        if (a.y < margin) a.vy += 0.04;
+        if (a.y > h - margin) a.vy -= 0.04;
       }
 
-      // Remove dead orbs
       orbsRef.current = orbs.filter(o => o.opacity > 0.001 || o.targetOpacity > 0);
 
-      // Draw orbs (back to front)
-      const sortedOrbs = [...orbsRef.current].sort((a, b) => b.radius - a.radius);
+      // ─── Draw orbs ───
+      const sorted = [...orbsRef.current].sort((a, b) => b.radius - a.radius);
 
-      for (const orb of sortedOrbs) {
+      for (const orb of sorted) {
         if (orb.opacity < 0.0005) continue;
 
         const pulse = Math.sin(t * orb.pulseSpeed + orb.pulseOffset) * 0.06 + 1;
-        const breathe = Math.sin(t * 0.3 + orb.distortionPhase) * 0.03 + 1;
+        const breathe = Math.sin(t * 0.3 + orb.breathePhase) * 0.03 + 1;
         const r = orb.radius * pulse * breathe;
 
-        // Atmospheric haze (outermost layer)
-        const hazeGrad = ctx.createRadialGradient(orb.x, orb.y, 0, orb.x, orb.y, r * 2.2);
-        hazeGrad.addColorStop(0, `rgba(${orb.color}, ${orb.opacity * 0.2})`);
-        hazeGrad.addColorStop(0.3, `rgba(${orb.color}, ${orb.opacity * 0.08})`);
-        hazeGrad.addColorStop(0.6, `rgba(${orb.color}, ${orb.opacity * 0.02})`);
-        hazeGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-
+        // Haze layer
+        const haze = ctx.createRadialGradient(orb.x, orb.y, 0, orb.x, orb.y, r * 2);
+        haze.addColorStop(0, `rgba(${orb.color}, ${orb.opacity * 0.2})`);
+        haze.addColorStop(0.3, `rgba(${orb.color}, ${orb.opacity * 0.08})`);
+        haze.addColorStop(0.6, `rgba(${orb.color}, ${orb.opacity * 0.02})`);
+        haze.addColorStop(1, 'rgba(0, 0, 0, 0)');
         ctx.beginPath();
-        ctx.arc(orb.x, orb.y, r * 2.2, 0, Math.PI * 2);
-        ctx.fillStyle = hazeGrad;
+        ctx.arc(orb.x, orb.y, r * 2, 0, Math.PI * 2);
+        ctx.fillStyle = haze;
         ctx.fill();
 
         // Main glow
-        const outerGrad = ctx.createRadialGradient(orb.x, orb.y, 0, orb.x, orb.y, r * 1.3);
-        outerGrad.addColorStop(0, `rgba(${orb.color}, ${orb.opacity * 0.7})`);
-        outerGrad.addColorStop(0.3, `rgba(${orb.color}, ${orb.opacity * 0.35})`);
-        outerGrad.addColorStop(0.6, `rgba(${orb.color}, ${orb.opacity * 0.12})`);
-        outerGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-
+        const main = ctx.createRadialGradient(orb.x, orb.y, 0, orb.x, orb.y, r * 1.3);
+        main.addColorStop(0, `rgba(${orb.color}, ${orb.opacity * 0.65})`);
+        main.addColorStop(0.3, `rgba(${orb.color}, ${orb.opacity * 0.3})`);
+        main.addColorStop(0.6, `rgba(${orb.color}, ${orb.opacity * 0.1})`);
+        main.addColorStop(1, 'rgba(0, 0, 0, 0)');
         ctx.beginPath();
         ctx.arc(orb.x, orb.y, r * 1.3, 0, Math.PI * 2);
-        ctx.fillStyle = outerGrad;
+        ctx.fillStyle = main;
         ctx.fill();
 
-        // Bright core with slight offset for depth
-        const coreOffsetX = Math.sin(orb.rotationAngle) * r * 0.05;
-        const coreOffsetY = Math.cos(orb.rotationAngle) * r * 0.05;
-        const coreGrad = ctx.createRadialGradient(
-          orb.x + coreOffsetX, orb.y + coreOffsetY, 0,
-          orb.x, orb.y, r * 0.5
-        );
-        coreGrad.addColorStop(0, `rgba(${orb.color}, ${orb.opacity * 1.5})`);
-        coreGrad.addColorStop(0.4, `rgba(${orb.color}, ${orb.opacity * 0.6})`);
-        coreGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-
+        // Core with slight offset
+        const offX = Math.sin(orb.rotAngle) * r * 0.04;
+        const offY = Math.cos(orb.rotAngle) * r * 0.04;
+        const core = ctx.createRadialGradient(orb.x + offX, orb.y + offY, 0, orb.x, orb.y, r * 0.45);
+        core.addColorStop(0, `rgba(${orb.color}, ${orb.opacity * 1.4})`);
+        core.addColorStop(0.5, `rgba(${orb.color}, ${orb.opacity * 0.5})`);
+        core.addColorStop(1, 'rgba(0, 0, 0, 0)');
         ctx.beginPath();
-        ctx.arc(orb.x, orb.y, r * 0.5, 0, Math.PI * 2);
-        ctx.fillStyle = coreGrad;
+        ctx.arc(orb.x, orb.y, r * 0.45, 0, Math.PI * 2);
+        ctx.fillStyle = core;
         ctx.fill();
 
-        // Inner highlight — white-ish hot center
-        const highlightGrad = ctx.createRadialGradient(
-          orb.x + coreOffsetX * 2, orb.y + coreOffsetY * 2, 0,
-          orb.x, orb.y, r * 0.15
-        );
-        highlightGrad.addColorStop(0, `rgba(255, 255, 255, ${orb.opacity * 0.4})`);
-        highlightGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-
+        // Hot center highlight
+        const hl = ctx.createRadialGradient(orb.x + offX * 2, orb.y + offY * 2, 0, orb.x, orb.y, r * 0.12);
+        hl.addColorStop(0, `rgba(255, 255, 255, ${orb.opacity * 0.35})`);
+        hl.addColorStop(1, 'rgba(0, 0, 0, 0)');
         ctx.beginPath();
-        ctx.arc(orb.x, orb.y, r * 0.15, 0, Math.PI * 2);
-        ctx.fillStyle = highlightGrad;
+        ctx.arc(orb.x, orb.y, r * 0.12, 0, Math.PI * 2);
+        ctx.fillStyle = hl;
         ctx.fill();
       }
 
-      // === Light bridges between nearby orbs ===
+      // ─── Light bridges ───
       for (let i = 0; i < orbsRef.current.length; i++) {
         for (let j = i + 1; j < orbsRef.current.length; j++) {
           const a = orbsRef.current[i];
           const b = orbsRef.current[j];
-
           const dx = b.x - a.x;
           const dy = b.y - a.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          const connectDist = (a.radius + b.radius) * 2;
+          const connectDist = (a.radius + b.radius) * 1.8;
 
           if (dist < connectDist && dist > 0) {
             const strength = (1 - dist / connectDist) * Math.min(a.opacity, b.opacity) * 6;
@@ -440,45 +395,40 @@ export function Background() {
               const midY = (a.y + b.y) / 2;
               const midColor = lerpColor(a.color, b.color, 0.5);
 
-              // Curved connection
-              const perpX = -dy / dist * 20 * Math.sin(t * 0.4 + i * 0.7);
-              const perpY = dx / dist * 20 * Math.sin(t * 0.4 + i * 0.7);
+              const perpX = -dy / dist * 18 * Math.sin(t * 0.4 + i * 0.7);
+              const perpY = dx / dist * 18 * Math.sin(t * 0.4 + i * 0.7);
 
               const grad = ctx.createLinearGradient(a.x, a.y, b.x, b.y);
               grad.addColorStop(0, `rgba(${a.color}, 0)`);
-              grad.addColorStop(0.2, `rgba(${a.color}, ${strength * 0.25})`);
-              grad.addColorStop(0.5, `rgba(${midColor}, ${strength * 0.4})`);
-              grad.addColorStop(0.8, `rgba(${b.color}, ${strength * 0.25})`);
+              grad.addColorStop(0.15, `rgba(${a.color}, ${strength * 0.2})`);
+              grad.addColorStop(0.5, `rgba(${midColor}, ${strength * 0.35})`);
+              grad.addColorStop(0.85, `rgba(${b.color}, ${strength * 0.2})`);
               grad.addColorStop(1, `rgba(${b.color}, 0)`);
 
               ctx.beginPath();
               ctx.moveTo(a.x, a.y);
               ctx.quadraticCurveTo(midX + perpX, midY + perpY, b.x, b.y);
               ctx.strokeStyle = grad;
-              ctx.lineWidth = 1.5 + strength * 8;
+              ctx.lineWidth = 1.5 + strength * 7;
               ctx.lineCap = 'round';
               ctx.stroke();
 
               // Bridge glow
-              const glowSize = 20 + strength * 30;
-              const glowGrad = ctx.createRadialGradient(
-                midX + perpX * 0.3, midY + perpY * 0.3, 0,
-                midX, midY, glowSize
-              );
-              glowGrad.addColorStop(0, `rgba(${midColor}, ${strength * 0.3})`);
-              glowGrad.addColorStop(0.5, `rgba(${midColor}, ${strength * 0.1})`);
-              glowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-
+              const glowR = 18 + strength * 25;
+              const glow = ctx.createRadialGradient(midX + perpX * 0.3, midY + perpY * 0.3, 0, midX, midY, glowR);
+              glow.addColorStop(0, `rgba(${midColor}, ${strength * 0.25})`);
+              glow.addColorStop(0.5, `rgba(${midColor}, ${strength * 0.08})`);
+              glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
               ctx.beginPath();
-              ctx.arc(midX, midY, glowSize, 0, Math.PI * 2);
-              ctx.fillStyle = glowGrad;
+              ctx.arc(midX, midY, glowR, 0, Math.PI * 2);
+              ctx.fillStyle = glow;
               ctx.fill();
             }
           }
         }
       }
 
-      // === Floating particles ===
+      // ─── Particles ───
       particlesRef.current = particlesRef.current.filter(p => {
         p.life -= delta / p.maxLife;
         if (p.life <= 0) return false;
@@ -487,22 +437,19 @@ export function Background() {
         p.y += p.vy;
         p.vx *= 0.998;
         p.vy *= 0.998;
-        p.vy -= 0.003; // slight upward drift
+        p.vy -= 0.003;
 
         const alpha = p.opacity * smoothstep(0, 0.3, p.life) * smoothstep(1, 0.7, 1 - p.life);
-
         if (alpha < 0.002) return true;
 
-        // Particle glow
-        const pGlow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 4);
-        pGlow.addColorStop(0, `rgba(${p.color}, ${alpha * 0.5})`);
-        pGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        const pg = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 3.5);
+        pg.addColorStop(0, `rgba(${p.color}, ${alpha * 0.4})`);
+        pg.addColorStop(1, 'rgba(0, 0, 0, 0)');
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size * 4, 0, Math.PI * 2);
-        ctx.fillStyle = pGlow;
+        ctx.arc(p.x, p.y, p.size * 3.5, 0, Math.PI * 2);
+        ctx.fillStyle = pg;
         ctx.fill();
 
-        // Particle core
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(${p.color}, ${alpha})`;
@@ -511,7 +458,7 @@ export function Background() {
         return true;
       });
 
-      // === Stars ===
+      // ─── Stars ───
       starsRef.current.forEach((star) => {
         star.y += star.driftY;
         star.x += star.driftX;
@@ -519,67 +466,57 @@ export function Background() {
         if (star.x < -5) star.x = w + 5;
         if (star.x > w + 5) star.x = -5;
 
-        const twinkle = Math.sin(t * star.twinkleSpeed + star.offset);
-        const twinkle2 = Math.sin(t * star.twinkleSpeed * 1.7 + star.offset * 2.3);
-        const alpha = star.opacity * (0.35 + (twinkle * 0.4 + 0.5) * 0.5 + twinkle2 * 0.1);
+        const tw1 = Math.sin(t * star.twinkleSpeed + star.offset);
+        const tw2 = Math.sin(t * star.twinkleSpeed * 1.7 + star.offset * 2.3);
+        const alpha = star.opacity * (0.35 + (tw1 * 0.4 + 0.5) * 0.5 + tw2 * 0.1);
 
-        // Star color based on warmth
-        let baseStarColor: string;
-        if (star.warmth < 0.3) {
-          baseStarColor = '160, 180, 255'; // cool blue
-        } else if (star.warmth < 0.6) {
-          baseStarColor = '200, 195, 255'; // neutral lavender
-        } else if (star.warmth < 0.85) {
-          baseStarColor = '255, 220, 200'; // warm
-        } else {
-          baseStarColor = '255, 200, 150'; // golden
-        }
+        // Star color from warmth — matches CSS violet palette
+        let baseColor: string;
+        if (star.warmth < 0.3) baseColor = '160, 175, 245';      // cool violet-blue
+        else if (star.warmth < 0.6) baseColor = '190, 180, 248';  // neutral lavender (matches --accent-secondary)
+        else if (star.warmth < 0.85) baseColor = '220, 210, 250'; // warm lavender
+        else baseColor = '245, 230, 210';                          // warm gold
 
-        // Influence from nearby orbs
-        let starColor = baseStarColor;
+        // Orb influence
+        let starColor = baseColor;
         let minDist = Infinity;
         for (const orb of orbsRef.current) {
           const dx = star.x - orb.x;
           const dy = star.y - orb.y;
-          const d = Math.sqrt(dx * dx + dy * dy);
-          if (d < minDist && d < orb.radius * 3) {
-            minDist = d;
-            const influence = smoothstep(orb.radius * 3, 0, d) * 0.5;
-            starColor = lerpColor(baseStarColor, orb.color, influence);
+          const dd = Math.sqrt(dx * dx + dy * dy);
+          if (dd < minDist && dd < orb.radius * 2.8) {
+            minDist = dd;
+            const inf = smoothstep(orb.radius * 2.8, 0, dd) * 0.45;
+            starColor = lerpColor(baseColor, orb.color, inf);
           }
         }
 
-        // Large stars get a glow
+        // Glow for larger stars
         if (star.size > 0.7) {
-          const glow = ctx.createRadialGradient(
-            star.x, star.y, 0,
-            star.x, star.y, star.size * 4
-          );
-          glow.addColorStop(0, `rgba(${starColor}, ${alpha * 0.15})`);
-          glow.addColorStop(0.5, `rgba(${starColor}, ${alpha * 0.04})`);
-          glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
-          ctx.fillStyle = glow;
+          const sg = ctx.createRadialGradient(star.x, star.y, 0, star.x, star.y, star.size * 3.5);
+          sg.addColorStop(0, `rgba(${starColor}, ${alpha * 0.12})`);
+          sg.addColorStop(0.5, `rgba(${starColor}, ${alpha * 0.03})`);
+          sg.addColorStop(1, 'rgba(0, 0, 0, 0)');
+          ctx.fillStyle = sg;
           ctx.beginPath();
-          ctx.arc(star.x, star.y, star.size * 4, 0, Math.PI * 2);
+          ctx.arc(star.x, star.y, star.size * 3.5, 0, Math.PI * 2);
           ctx.fill();
         }
 
-        // Star cross-shine for brightest stars
-        if (star.size > 1.2 && alpha > 0.15) {
-          const shineLength = star.size * 6;
-          const shineAlpha = alpha * 0.08;
-
+        // Cross-shine for brightest
+        if (star.size > 1.2 && alpha > 0.14) {
+          const len = star.size * 5;
           ctx.save();
-          ctx.globalAlpha = shineAlpha;
+          ctx.globalAlpha = alpha * 0.06;
           ctx.strokeStyle = `rgba(${starColor}, 1)`;
           ctx.lineWidth = 0.5;
           ctx.beginPath();
-          ctx.moveTo(star.x - shineLength, star.y);
-          ctx.lineTo(star.x + shineLength, star.y);
+          ctx.moveTo(star.x - len, star.y);
+          ctx.lineTo(star.x + len, star.y);
           ctx.stroke();
           ctx.beginPath();
-          ctx.moveTo(star.x, star.y - shineLength);
-          ctx.lineTo(star.x, star.y + shineLength);
+          ctx.moveTo(star.x, star.y - len);
+          ctx.lineTo(star.x, star.y + len);
           ctx.stroke();
           ctx.restore();
         }
@@ -590,14 +527,14 @@ export function Background() {
         ctx.fill();
       });
 
-      // === Subtle vignette ===
-      const vignetteGrad = ctx.createRadialGradient(
-        w * 0.5, h * 0.5, Math.min(w, h) * 0.25,
+      // ─── Vignette ───
+      const vig = ctx.createRadialGradient(
+        w * 0.5, h * 0.5, Math.min(w, h) * 0.3,
         w * 0.5, h * 0.5, Math.max(w, h) * 0.75
       );
-      vignetteGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
-      vignetteGrad.addColorStop(1, 'rgba(0, 0, 0, 0.15)');
-      ctx.fillStyle = vignetteGrad;
+      vig.addColorStop(0, 'rgba(0, 0, 0, 0)');
+      vig.addColorStop(1, 'rgba(0, 0, 0, 0.12)');
+      ctx.fillStyle = vig;
       ctx.fillRect(0, 0, w, h);
 
       animationRef.current = requestAnimationFrame(animate);
@@ -607,7 +544,7 @@ export function Background() {
 
     return () => {
       window.removeEventListener('resize', resize);
-      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mousemove', handleMouse);
       cancelAnimationFrame(animationRef.current);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
