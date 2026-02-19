@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
+import { Coffee, Sparkles } from 'lucide-react';
 import { useThemeStore } from '../store/themeStore';
 import { useChatStore } from '../store/chatStore';
 import { OPENROUTER_API_URL, DEFAULT_MODEL } from '../config/models';
@@ -181,22 +182,90 @@ export function WelcomeScreen() {
       className="flex flex-col items-center justify-center"
       style={{ minHeight: 'calc(100vh - 250px)' }}
     >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+        className="mb-8"
+      >
+        <div className={`relative w-20 h-20 rounded-3xl flex items-center justify-center ${
+          isDark
+            ? 'bg-gradient-to-br from-amber-500/20 to-orange-600/20 border border-amber-500/20'
+            : 'bg-gradient-to-br from-amber-100 to-orange-100 border border-amber-200'
+        }`}>
+          <Coffee className={`w-10 h-10 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+            className="absolute inset-0"
+          >
+            <Sparkles className={`absolute -top-1 -right-1 w-4 h-4 ${isDark ? 'text-amber-500/50' : 'text-amber-400/50'}`} />
+          </motion.div>
+        </div>
+      </motion.div>
+
       <motion.h1
         key={text}
         initial={{ opacity: 0, y: 20, filter: 'blur(10px)' }}
         animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
         transition={{ duration: 0.6, ease: 'easeOut' }}
-        className={`text-3xl md:text-4xl lg:text-5xl font-bold text-center px-4 ${
-          isDark ? 'text-white' : 'text-zinc-900'
+        className={`text-3xl md:text-4xl lg:text-5xl font-bold text-center px-4 max-w-2xl ${
+          isDark ? 'text-amber-50' : 'text-amber-900'
         }`}
         style={{
           textShadow: isDark
-            ? '0 0 40px rgba(139, 92, 246, 0.3), 0 0 80px rgba(139, 92, 246, 0.1)'
-            : '0 2px 10px rgba(0, 0, 0, 0.08)',
+            ? '0 0 40px rgba(180, 130, 70, 0.25), 0 0 80px rgba(180, 130, 70, 0.1)'
+            : '0 2px 10px rgba(180, 130, 70, 0.08)',
         }}
       >
         {text}
       </motion.h1>
+
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.4, duration: 0.5 }}
+        className="mt-8 flex items-center gap-2"
+      >
+        <div className={`flex items-center gap-1.5 px-4 py-2 rounded-full ${
+          isDark
+            ? 'bg-amber-500/10 border border-amber-500/15'
+            : 'bg-amber-100 border border-amber-200'
+        }`}>
+          <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${isDark ? 'bg-amber-400' : 'bg-amber-500'}`} />
+          <span className={`text-xs font-medium ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
+            MoGPT готов к работе
+          </span>
+        </div>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.6, duration: 0.5 }}
+        className="mt-6 grid grid-cols-3 gap-3"
+      >
+        {[
+          { icon: '💡', label: 'Идеи' },
+          { icon: '📝', label: 'Тексты' },
+          { icon: '💻', label: 'Код' },
+        ].map((item, i) => (
+          <motion.div
+            key={item.label}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7 + i * 0.1 }}
+            className={`flex flex-col items-center gap-1.5 px-4 py-3 rounded-xl ${
+              isDark
+                ? 'bg-amber-900/10 border border-amber-900/20'
+                : 'bg-amber-50 border border-amber-100'
+            }`}
+          >
+            <span className="text-lg">{item.icon}</span>
+            <span className={`text-xs font-medium ${isDark ? 'text-amber-500' : 'text-amber-600'}`}>{item.label}</span>
+          </motion.div>
+        ))}
+      </motion.div>
     </motion.div>
   );
 }
