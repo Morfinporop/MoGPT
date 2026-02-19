@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Flame, Smile, Angry } from 'lucide-react';
+import { Send, Flame, Smile, Angry, ImageIcon, X } from 'lucide-react';
 import { useChatStore, type RudenessMode } from '../store/chatStore';
 import { useAuthStore } from '../store/authStore';
 import { aiService } from '../services/aiService';
@@ -15,13 +15,18 @@ const RUDENESS_MODES: { id: RudenessMode; label: string; icon: typeof Flame; des
 
 const UNLIMITED_EMAILS = ['energoferon41@gmail.com'];
 const CHAR_LIMIT = 10000;
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
 export function ChatInput() {
   const [input, setInput] = useState('');
   const [showRudeness, setShowRudeness] = useState(false);
   const [showCharLimitWarning, setShowCharLimitWarning] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const rudenessRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
     addMessage, updateMessage, getCurrentMessages, responseMode, rudenessMode,
@@ -34,6 +39,9 @@ export function ChatInput() {
   const isUnlimitedUser = user?.email && UNLIMITED_EMAILS.includes(user.email);
   const charCount = input.length;
   const isOverLimit = !isUnlimitedUser && charCount > CHAR_LIMIT;
+
+  const currentModel = AI_MODELS.find(m => m.id === selectedModel);
+  const supportsImages = currentModel?.supportsImage || false;
 
   const handleRudenessSwitch = useCallback((newRudeness: RudenessMode) => {
     if (newRudeness === rudenessMode) { setShowRudeness(false); return; }
@@ -72,17 +80,66 @@ export function ChatInput() {
     setInput(value);
   };
 
+  const handleImageSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setImageError('Можно загружать только изображения');
+      setTimeout(() => setImageError(null), 3000);
+      return;
+    }
+
+    if (file.size > MAX_IMAGE_SIZE) {
+      setImageError('Размер изображения не должен превышать 5 МБ');
+      setTimeout(() => setImageError(null), 3000);
+      return;
+    }
+
+    setSelectedImage(file);
+    setImageError(null);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setImagePreview(event.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }, []);
+
+  const clearImage = useCallback(() => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }, []);
+
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     const trimmedInput = input.trim();
-    if (!trimmedInput || generating || isOverLimit) return;
+    if ((!trimmedInput && !selectedImage) || generating || isOverLimit) return;
+
+    if (selectedImage && !supportsImages) {
+      setImageError('Эта модель не поддерживает изображения. Выберите модель с поддержкой изображений.');
+      setTimeout(() => setImageError(null), 4000);
+      return;
+    }
 
     const { isDual, secondModelId } = useCompareMode();
 
     setInput('');
     if (textareaRef.current) textareaRef.current.style.height = '36px';
 
-    addMessage({ role: 'user', content: trimmedInput });
+    let imageUrl: string | undefined;
+    if (selectedImage && imagePreview) {
+      imageUrl = imagePreview;
+      clearImage();
+    }
+
+    addMessage({ role: 'user', content: trimmedInput || (imageUrl ? 'Что на этом изображении?' : ''), imageUrl });
 
     const chatId = useChatStore.getState().currentChatId;
     if (!chatId) return;
@@ -165,6 +222,35 @@ export function ChatInput() {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); }
   };
 
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    if (!supportsImages) return;
+
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        e.preventDefault();
+        const file = items[i].getAsFile();
+        if (file) {
+          if (file.size > MAX_IMAGE_SIZE) {
+            setImageError('Размер изображения не должен превышать 5 МБ');
+            setTimeout(() => setImageError(null), 3000);
+            return;
+          }
+          setSelectedImage(file);
+          setImageError(null);
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            setImagePreview(event.target?.result as string);
+          };
+          reader.readAsDataURL(file);
+        }
+        break;
+      }
+    }
+  }, [supportsImages]);
+
   const currentRudeness = RUDENESS_MODES.find(m => m.id === rudenessMode) || RUDENESS_MODES[1];
 
   return (
@@ -175,6 +261,41 @@ export function ChatInput() {
             className="flex items-center gap-2 px-4 py-3 mb-3 rounded-xl bg-red-500/10 border border-red-500/20"
           >
             <p className="text-sm text-red-300">Лимит {CHAR_LIMIT} символов достигнут.</p>
+          </motion.div>
+        )}
+        {imageError && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
+            className="flex items-center gap-2 px-4 py-3 mb-3 rounded-xl bg-red-500/10 border border-red-500/20"
+          >
+            <p className="text-sm text-red-300">{imageError}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {imagePreview && (
+          <motion.div
+            initial={{ opacity: 0, y: 10, height: 0 }}
+            animate={{ opacity: 1, y: 0, height: 'auto' }}
+            exit={{ opacity: 0, y: 10, height: 0 }}
+            className="mb-3 flex items-center gap-3 px-4 py-3 rounded-xl glass-strong border border-white/10"
+          >
+            <img src={imagePreview} alt="Превью" className="h-20 w-20 rounded-lg object-cover border border-white/10" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-zinc-300 truncate">{selectedImage?.name}</p>
+              <p className="text-xs text-zinc-500">
+                {selectedImage && (selectedImage.size / 1024).toFixed(0)} КБ
+              </p>
+            </div>
+            <motion.button
+              type="button"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={clearImage}
+              className="p-2 rounded-lg hover:bg-red-500/20 transition-colors"
+            >
+              <X className="w-4 h-4 text-red-400" />
+            </motion.button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -219,13 +340,45 @@ export function ChatInput() {
           </AnimatePresence>
         </div>
 
+        <motion.button
+          type="button"
+          whileHover={{ scale: supportsImages ? 1.02 : 1 }}
+          whileTap={{ scale: supportsImages ? 0.98 : 1 }}
+          onClick={() => {
+            if (supportsImages && fileInputRef.current) {
+              fileInputRef.current.click();
+            } else if (!supportsImages) {
+              setImageError('Эта модель не поддерживает изображения. Выберите другую модель.');
+              setTimeout(() => setImageError(null), 3000);
+            }
+          }}
+          className={`flex items-center justify-center w-[52px] h-[52px] rounded-2xl glass-strong transition-all border border-white/5 ${
+            supportsImages
+              ? 'hover:bg-white/10 hover:border-violet-500/30'
+              : 'opacity-40 cursor-not-allowed'
+          }`}
+          disabled={generating}
+        >
+          <ImageIcon className={`w-5 h-5 ${supportsImages ? 'text-violet-400' : 'text-zinc-600'}`} />
+        </motion.button>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/png,image/jpeg,image/gif,image/webp"
+          onChange={handleImageSelect}
+          className="hidden"
+        />
+
         <form onSubmit={handleSubmit}
           className={`flex-1 relative rounded-2xl glass-strong border ${isOverLimit ? 'border-red-500/50' : 'border-white/5'}`}
         >
           <div className="relative flex items-center min-h-[52px] pl-4 pr-2">
             <div className="flex-1 flex items-center">
               <textarea ref={textareaRef} value={input} onChange={handleInputChange} onKeyDown={handleKeyDown}
-                placeholder="Напиши что-нибудь..." disabled={generating}
+                onPaste={handlePaste}
+                placeholder={selectedImage ? 'Опишите что нужно сделать с изображением...' : 'Напиши что-нибудь...'}
+                disabled={generating}
                 maxLength={isUnlimitedUser ? undefined : CHAR_LIMIT} rows={1}
                 className="w-full bg-transparent text-white placeholder-zinc-600 resize-none text-[15px] leading-9 max-h-[160px] focus:outline-none"
                 style={{ outline: 'none', border: 'none', boxShadow: 'none', height: '36px', minHeight: '36px' }}
@@ -238,10 +391,10 @@ export function ChatInput() {
               </span>
             )}
 
-            <motion.button type="submit" disabled={!input.trim() || generating || isOverLimit}
+            <motion.button type="submit" disabled={(!input.trim() && !selectedImage) || generating || isOverLimit}
               whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
               className={`flex-shrink-0 w-10 h-10 rounded-xl transition-all duration-200 ml-1 flex items-center justify-center ${
-                input.trim() && !generating && !isOverLimit
+                (input.trim() || selectedImage) && !generating && !isOverLimit
                   ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
                   : 'bg-white/5 text-zinc-600 cursor-not-allowed'
               }`}
