@@ -27,7 +27,7 @@ export function App() {
   return (
     <div
       className="relative min-h-screen overflow-hidden"
-      style={{ background: isDark ? '#0a0a0a' : '#f5f5f7' }}
+      style={{ background: isDark ? '#0a0705' : '#faf8f5' }}
     >
       {isDark && <Background />}
 
@@ -48,8 +48,8 @@ export function App() {
           className="fixed bottom-0 left-0 right-0 z-20 pb-6 pt-6"
           style={{
             background: isDark
-              ? 'linear-gradient(to top, #0a0a0a 0%, rgba(10,10,10,0.97) 60%, transparent 100%)'
-              : 'linear-gradient(to top, #f5f5f7 0%, rgba(245,245,247,0.97) 60%, transparent 100%)',
+              ? 'linear-gradient(to top, #0a0705 0%, rgba(10,7,5,0.97) 60%, transparent 100%)'
+              : 'linear-gradient(to top, #faf8f5 0%, rgba(250,248,245,0.97) 60%, transparent 100%)',
           }}
         >
           <ChatInput />
