@@ -2,6 +2,7 @@ export interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
+  imageUrl?: string;
   timestamp: Date;
   isLoading?: boolean;
   model?: string;
@@ -26,6 +27,7 @@ export interface AIModel {
   provider: string;
   icon: string;
   color: string;
+  supportsImage: boolean;
 }
 
 export interface OpenRouterResponse {
