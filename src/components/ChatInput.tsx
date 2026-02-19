@@ -1,9 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Flame, Smile, Angry, Coffee } from 'lucide-react';
+import { Send, Flame, Smile, Angry } from 'lucide-react';
 import { useChatStore, type RudenessMode } from '../store/chatStore';
 import { useAuthStore } from '../store/authStore';
-import { useThemeStore } from '../store/themeStore';
 import { aiService } from '../services/aiService';
 import { AI_MODELS } from '../config/models';
 import { useCompareMode } from './Header';
@@ -11,7 +10,7 @@ import { useCompareMode } from './Header';
 const RUDENESS_MODES: { id: RudenessMode; label: string; icon: typeof Flame; desc: string; activeColor: string; dotColor: string; iconActive: string; hoverBorder: string }[] = [
   { id: 'very_rude', label: 'Очень грубый', icon: Angry, desc: 'Мат и прямота', activeColor: 'bg-red-500/20', dotColor: 'bg-red-500', iconActive: 'text-red-400', hoverBorder: 'hover:border-red-500/30' },
   { id: 'rude', label: 'Грубый', icon: Flame, desc: 'Дерзкий сарказм', activeColor: 'bg-orange-500/20', dotColor: 'bg-orange-500', iconActive: 'text-orange-400', hoverBorder: 'hover:border-orange-500/30' },
-  { id: 'polite', label: 'Вежливый', icon: Smile, desc: 'Без мата и грубости', activeColor: 'bg-emerald-500/20', dotColor: 'bg-emerald-500', iconActive: 'text-emerald-400', hoverBorder: 'hover:border-emerald-500/30' },
+  { id: 'polite', label: 'Вежливый', icon: Smile, desc: 'Без мата и грубости', activeColor: 'bg-green-500/20', dotColor: 'bg-green-500', iconActive: 'text-green-400', hoverBorder: 'hover:border-green-500/30' },
 ];
 
 const UNLIMITED_EMAILS = ['energoferon41@gmail.com'];
@@ -23,9 +22,6 @@ export function ChatInput() {
   const [showCharLimitWarning, setShowCharLimitWarning] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const rudenessRef = useRef<HTMLDivElement>(null);
-
-  const { theme } = useThemeStore();
-  const isDark = theme === 'dark';
 
   const {
     addMessage, updateMessage, getCurrentMessages, responseMode, rudenessMode,
@@ -176,11 +172,9 @@ export function ChatInput() {
       <AnimatePresence>
         {showCharLimitWarning && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
-            className={`flex items-center gap-2 px-4 py-3 mb-3 rounded-xl ${
-              isDark ? 'bg-red-500/10 border border-red-500/20' : 'bg-red-50 border border-red-200'
-            }`}
+            className="flex items-center gap-2 px-4 py-3 mb-3 rounded-xl bg-red-500/10 border border-red-500/20"
           >
-            <p className={`text-sm ${isDark ? 'text-red-300' : 'text-red-600'}`}>Лимит {CHAR_LIMIT} символов достигнут.</p>
+            <p className="text-sm text-red-300">Лимит {CHAR_LIMIT} символов достигнут.</p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -189,11 +183,7 @@ export function ChatInput() {
         <div className="relative" ref={rudenessRef}>
           <motion.button type="button" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
             onClick={() => setShowRudeness(!showRudeness)}
-            className={`flex items-center justify-center w-[52px] h-[52px] rounded-2xl transition-all border ${
-              isDark
-                ? 'bg-[#0d0a08]/90 backdrop-blur-xl border-amber-900/20 hover:bg-amber-900/20 hover:border-amber-700/30'
-                : 'bg-white/90 backdrop-blur-xl border-amber-200 hover:bg-amber-50 hover:border-amber-300'
-            } ${currentRudeness.hoverBorder}`}
+            className={`flex items-center justify-center w-[52px] h-[52px] rounded-2xl glass-strong transition-all border border-white/5 hover:bg-white/10 ${currentRudeness.hoverBorder}`}
           >
             <currentRudeness.icon className={`w-5 h-5 ${currentRudeness.iconActive}`} />
           </motion.button>
@@ -202,31 +192,23 @@ export function ChatInput() {
             {showRudeness && (
               <motion.div initial={{ opacity: 0, y: 8, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.95 }}
                 transition={{ duration: 0.15 }}
-                className={`absolute bottom-full left-0 mb-2 w-52 rounded-xl border overflow-hidden z-50 ${
-                  isDark
-                    ? 'bg-[#0d0a08]/95 backdrop-blur-xl border-amber-900/20'
-                    : 'bg-white/95 backdrop-blur-xl border-amber-200'
-                }`}
+                className="absolute bottom-full left-0 mb-2 w-52 glass-strong rounded-xl border border-white/10 overflow-hidden z-50"
               >
-                <div className={`p-2 border-b ${isDark ? 'border-amber-900/15' : 'border-amber-100'}`}>
-                  <p className={`text-xs px-2 ${isDark ? 'text-amber-600' : 'text-amber-500'}`}>Режим общения</p>
+                <div className="p-2 border-b border-white/5">
+                  <p className="text-xs text-zinc-500 px-2">Режим общения</p>
                 </div>
                 {RUDENESS_MODES.map((mode) => {
                   const isActive = rudenessMode === mode.id;
                   return (
                     <button key={mode.id} type="button" onClick={() => handleRudenessSwitch(mode.id)}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all ${
-                        isDark ? 'hover:bg-amber-900/20' : 'hover:bg-amber-50'
-                      } ${isActive ? mode.activeColor : ''}`}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/5 transition-all ${isActive ? mode.activeColor : ''}`}
                     >
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                        isActive ? mode.activeColor : isDark ? 'bg-amber-900/20' : 'bg-amber-100'
-                      }`}>
-                        <mode.icon className={`w-4 h-4 ${isActive ? mode.iconActive : isDark ? 'text-amber-600' : 'text-amber-400'}`} />
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isActive ? mode.activeColor : 'bg-white/5'}`}>
+                        <mode.icon className={`w-4 h-4 ${isActive ? mode.iconActive : 'text-zinc-500'}`} />
                       </div>
                       <div className="flex-1">
-                        <p className={`text-sm ${isActive ? (isDark ? 'text-white font-medium' : 'text-amber-900 font-medium') : (isDark ? 'text-amber-300' : 'text-amber-700')}`}>{mode.label}</p>
-                        <p className={`text-[10px] ${isDark ? 'text-amber-700' : 'text-amber-400'}`}>{mode.desc}</p>
+                        <p className={`text-sm ${isActive ? 'text-white font-medium' : 'text-zinc-400'}`}>{mode.label}</p>
+                        <p className="text-[10px] text-zinc-600">{mode.desc}</p>
                       </div>
                       {isActive && <div className={`w-2 h-2 rounded-full ${mode.dotColor}`} />}
                     </button>
@@ -238,36 +220,20 @@ export function ChatInput() {
         </div>
 
         <form onSubmit={handleSubmit}
-          className={`flex-1 relative rounded-2xl border transition-all ${
-            isOverLimit
-              ? 'border-red-500/50'
-              : isDark
-                ? 'bg-[#0d0a08]/90 backdrop-blur-xl border-amber-900/20 focus-within:border-amber-700/40'
-                : 'bg-white/90 backdrop-blur-xl border-amber-200 focus-within:border-amber-400'
-          }`}
+          className={`flex-1 relative rounded-2xl glass-strong border ${isOverLimit ? 'border-red-500/50' : 'border-white/5'}`}
         >
           <div className="relative flex items-center min-h-[52px] pl-4 pr-2">
             <div className="flex-1 flex items-center">
               <textarea ref={textareaRef} value={input} onChange={handleInputChange} onKeyDown={handleKeyDown}
                 placeholder="Напиши что-нибудь..." disabled={generating}
                 maxLength={isUnlimitedUser ? undefined : CHAR_LIMIT} rows={1}
-                className={`w-full bg-transparent resize-none text-[15px] leading-9 max-h-[160px] focus:outline-none ${
-                  isDark
-                    ? 'text-amber-50 placeholder-amber-700'
-                    : 'text-amber-900 placeholder-amber-400'
-                }`}
+                className="w-full bg-transparent text-white placeholder-zinc-600 resize-none text-[15px] leading-9 max-h-[160px] focus:outline-none"
                 style={{ outline: 'none', border: 'none', boxShadow: 'none', height: '36px', minHeight: '36px' }}
               />
             </div>
 
             {!isUnlimitedUser && input.length > 0 && (
-              <span className={`text-[11px] mr-1 flex-shrink-0 ${
-                charCount >= CHAR_LIMIT
-                  ? 'text-red-400'
-                  : charCount > CHAR_LIMIT * 0.8
-                    ? 'text-orange-400'
-                    : isDark ? 'text-amber-700' : 'text-amber-400'
-              }`}>
+              <span className={`text-[11px] mr-1 flex-shrink-0 ${charCount >= CHAR_LIMIT ? 'text-red-400' : charCount > CHAR_LIMIT * 0.8 ? 'text-orange-400' : 'text-zinc-600'}`}>
                 {charCount}/{CHAR_LIMIT}
               </span>
             )}
@@ -277,9 +243,7 @@ export function ChatInput() {
               className={`flex-shrink-0 w-10 h-10 rounded-xl transition-all duration-200 ml-1 flex items-center justify-center ${
                 input.trim() && !generating && !isOverLimit
                   ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
-                  : isDark
-                    ? 'bg-amber-900/20 text-amber-700 cursor-not-allowed'
-                    : 'bg-amber-100 text-amber-400 cursor-not-allowed'
+                  : 'bg-white/5 text-zinc-600 cursor-not-allowed'
               }`}
             >
               <Send className={`w-5 h-5 ${generating ? 'animate-pulse' : ''}`} />
@@ -288,12 +252,9 @@ export function ChatInput() {
         </form>
       </div>
 
-      <div className="flex items-center justify-center gap-1.5 mt-3">
-        <Coffee className={`w-3 h-3 ${isDark ? 'text-amber-800' : 'text-amber-300'}`} />
-        <p className={`text-[11px] ${isDark ? 'text-amber-700' : 'text-amber-400'}`}>
-          MoGPT может ошибаться
-        </p>
-      </div>
+      <p className="text-center text-[11px] text-zinc-600 mt-3">
+        MoSeek может ошибаться
+      </p>
     </div>
   );
 }
